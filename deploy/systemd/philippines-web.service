@@ -1,0 +1,26 @@
+[Unit]
+Description=Philippines Cities Next.js service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=philippines
+Group=philippines
+WorkingDirectory=/var/www/philippines/frontend
+EnvironmentFile=/etc/philippines/web.env
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=HOSTNAME=127.0.0.1
+Environment=NEXT_TELEMETRY_DISABLED=1
+ExecStart=/usr/bin/npm run start
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

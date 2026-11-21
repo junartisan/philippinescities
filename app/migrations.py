@@ -1,0 +1,119 @@
+from sqlalchemy import inspect
+from sqlalchemy.engine import Engine
+
+
+def ensure_schema(engine: Engine) -> None:
+    inspector = inspect(engine)
+    timestamp_type = (
+        "TIMESTAMP WITH TIME ZONE" if engine.dialect.name == "postgresql" else "DATETIME"
+    )
+    if "users" not in inspector.get_table_names():
+        return
+
+    existing = {column["name"] for column in inspector.get_columns("users")}
+    with engine.begin() as connection:
+        if "avatar_url" not in existing:
+            connection.exec_driver_sql("ALTER TABLE users ADD COLUMN avatar_url VARCHAR(500)")
+        if "google_id" not in existing:
+            connection.exec_driver_sql("ALTER TABLE users ADD COLUMN google_id VARCHAR(255)")
+        if "facebook_id" not in existing:
+            connection.exec_driver_sql("ALTER TABLE users ADD COLUMN facebook_id VARCHAR(255)")
+        if "stripe_customer_id" not in existing:
+            connection.exec_driver_sql(
+                "ALTER TABLE users ADD COLUMN stripe_customer_id VARCHAR(255)"
+            )
+        connection.exec_driver_sql(
+            "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_google_id ON users (google_id)"
+        )
+        connection.exec_driver_sql(
+            "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_facebook_id ON users (facebook_id)"
+        )
+        connection.exec_driver_sql(
+            "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_stripe_customer_id "
+            "ON users (stripe_customer_id)"
+        )
+
+    if "businesses" in inspector.get_table_names():
+        existing = {column["name"] for column in inspector.get_columns("businesses")}
+        with engine.begin() as connection:
+            if "stripe_subscription_id" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE businesses ADD COLUMN stripe_subscription_id VARCHAR(255)"
+                )
+            if "stripe_price_id" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE businesses ADD COLUMN stripe_price_id VARCHAR(255)"
+                )
+            if "subscription_status" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE businesses ADD COLUMN subscription_status VARCHAR(32)"
+                )
+            if "subscription_current_period_end" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE businesses ADD COLUMN "
+                    f"subscription_current_period_end {timestamp_type}"
+                )
+            if "manual_paid_until" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE businesses ADD COLUMN "
+                    f"manual_paid_until {timestamp_type}"
+                )
+            if "article_access_override" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE businesses ADD COLUMN article_access_override VARCHAR(20)"
+                )
+            if "article_access_notes" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE businesses ADD COLUMN article_access_notes VARCHAR(1000)"
+                )
+            if "featured_until" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE businesses ADD COLUMN "
+                    f"featured_until {timestamp_type}"
+                )
+            connection.exec_driver_sql(
+                "CREATE UNIQUE INDEX IF NOT EXISTS ix_businesses_stripe_subscription_id "
+                "ON businesses (stripe_subscription_id)"
+            )
+            connection.exec_driver_sql(
+                "CREATE INDEX IF NOT EXISTS ix_businesses_featured_until "
+                "ON businesses (featured_until)"
+            )
+
+    if "city_posts" in inspector.get_table_names():
+        existing = {column["name"] for column in inspector.get_columns("city_posts")}
+        with engine.begin() as connection:
+            if "blog_category_id" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE city_posts ADD COLUMN blog_category_id INTEGER"
+                )
+            if "review_status" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE city_posts ADD COLUMN review_status VARCHAR(20) "
+                    "NOT NULL DEFAULT 'approved'"
+                )
+            if "review_notes" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE city_posts ADD COLUMN review_notes VARCHAR(1000)"
+                )
+            if "reviewed_by_id" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE city_posts ADD COLUMN reviewed_by_id INTEGER"
+                )
+            if "reviewed_at" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE city_posts ADD COLUMN "
+                    f"reviewed_at {timestamp_type}"
+                )
+            connection.exec_driver_sql(
+                "CREATE INDEX IF NOT EXISTS ix_city_posts_blog_category_id "
+                "ON city_posts (blog_category_id)"
+            )
+            connection.exec_driver_sql(
+                "CREATE INDEX IF NOT EXISTS ix_city_posts_review_status "
+                "ON city_posts (review_status)"
+            )
+            connection.exec_driver_sql(
+                "CREATE INDEX IF NOT EXISTS ix_city_posts_reviewed_by_id "
+                "ON city_posts (reviewed_by_id)"
+            )
