@@ -12,6 +12,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
+import { AdSlot } from "@/components/adsense";
 import {
   Alert,
   Avatar,
@@ -35,7 +36,7 @@ export default function CityPostDetailPage() {
     if (!slug) return;
     let active = true;
     setLoading(true);
-    api<CityPost>(`/api/city-posts/${slug}`)
+    api<CityPost>(`/api/city-posts/${encodeURIComponent(slug)}`)
       .then((data) => {
         if (active) {
           setPost(data);
@@ -164,17 +165,20 @@ export default function CityPostDetailPage() {
         <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
           <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-semibold text-slate-900">City</h2>
-            <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-slate-800">
+            <Link
+              href={`/cities/${post.city.slug}`}
+              className="mt-3 flex items-center gap-1.5 text-sm font-medium text-slate-800 hover:text-emerald-700"
+            >
               <MapPin className="h-4 w-4 text-emerald-600" />
               {post.city.name}
               {post.city.province ? `, ${post.city.province}` : ""}
-            </p>
+            </Link>
             {post.city.region ? (
               <p className="mt-1 text-xs text-slate-500">{post.city.region}</p>
             ) : null}
             <div className="mt-4 flex flex-col gap-2">
               <Link
-                href={`/blog?city_id=${post.city.id}`}
+                href={`/cities/${post.city.slug}#news`}
                 className={buttonClass("secondary", "sm", "w-full")}
               >
                 <Newspaper className="h-4 w-4" />
@@ -182,7 +186,7 @@ export default function CityPostDetailPage() {
               </Link>
               {post.blog_category ? (
                 <Link
-                  href={`/blog?blog_category_id=${post.blog_category.id}`}
+                  href={`/blog/categories/${post.blog_category.slug}`}
                   className={buttonClass("secondary", "sm", "w-full")}
                 >
                   <Newspaper className="h-4 w-4" />
@@ -190,7 +194,7 @@ export default function CityPostDetailPage() {
                 </Link>
               ) : null}
               <Link
-                href={`/businesses?city_id=${post.city.id}`}
+                href={`/cities/${post.city.slug}#businesses`}
                 className={buttonClass("ghost", "sm", "w-full")}
               >
                 Browse local businesses
@@ -209,6 +213,12 @@ export default function CityPostDetailPage() {
               </p>
             </div>
           ) : null}
+
+          <AdSlot
+            slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_BLOG_DETAIL}
+            format="rectangle"
+            minHeight={250}
+          />
 
           <Alert tone="info">
             City blog posts are published by Philippines Cities administrators and are

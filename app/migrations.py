@@ -105,6 +105,22 @@ def ensure_schema(engine: Engine) -> None:
                     "ALTER TABLE city_posts ADD COLUMN "
                     f"reviewed_at {timestamp_type}"
                 )
+            if "source_id" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE city_posts ADD COLUMN source_id VARCHAR(100)"
+                )
+            if "source_url" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE city_posts ADD COLUMN source_url VARCHAR(500)"
+                )
+            connection.exec_driver_sql(
+                "CREATE INDEX IF NOT EXISTS ix_city_posts_source_id "
+                "ON city_posts (source_id)"
+            )
+            connection.exec_driver_sql(
+                "CREATE INDEX IF NOT EXISTS ix_city_posts_source_url "
+                "ON city_posts (source_url)"
+            )
             connection.exec_driver_sql(
                 "CREATE INDEX IF NOT EXISTS ix_city_posts_blog_category_id "
                 "ON city_posts (blog_category_id)"

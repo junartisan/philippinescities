@@ -61,7 +61,7 @@ export default function CategoriesPage() {
                 return (
                   <Link
                     key={category.id}
-                    href={`/businesses?category_id=${category.id}`}
+                    href={`/categories/${category.slug}`}
                     className="group flex flex-col rounded-2xl border border-stone-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md"
                   >
                     <div className="flex items-center justify-between">

@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import { Newspaper, RotateCcw, Search } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
+import { AdSlot } from "@/components/adsense";
 import { ArticleCard } from "@/components/article-card";
 import {
   Alert,
@@ -177,6 +178,15 @@ export function ArticlesClient() {
                 <ArticleCard key={article.id} article={article} />
               ))}
         </div>
+
+        {!loading && (data?.items.length ?? 0) > 0 ? (
+          <div className="mt-8">
+            <AdSlot
+              slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_LIST}
+              minHeight={140}
+            />
+          </div>
+        ) : null}
 
         {!loading && data && data.items.length === 0 ? (
           <div className="mt-8">

@@ -16,6 +16,14 @@ def list_categories(db: Session = Depends(get_db)):
     return db.scalars(select(Category).order_by(Category.name)).all()
 
 
+@router.get("/slug/{slug}", response_model=CategoryOut)
+def get_category_by_slug(slug: str, db: Session = Depends(get_db)):
+    category = db.scalar(select(Category).where(Category.slug == slug))
+    if category is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
+    return category
+
+
 @router.get("/{category_id}", response_model=CategoryOut)
 def get_category(category_id: int, db: Session = Depends(get_db)):
     category = db.get(Category, category_id)

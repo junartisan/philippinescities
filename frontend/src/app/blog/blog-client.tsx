@@ -5,6 +5,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import { MapPin, Newspaper, PenLine, RotateCcw, Search } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
+import { AdSlot } from "@/components/adsense";
 import { CityPostCard } from "@/components/city-post-card";
 import {
   Alert,
@@ -262,6 +263,15 @@ export function BlogClient() {
                 <CityPostCard key={post.id} post={post} />
               ))}
         </div>
+
+        {!loading && (data?.items.length ?? 0) > 0 ? (
+          <div className="mt-8">
+            <AdSlot
+              slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_BLOG_LIST}
+              minHeight={140}
+            />
+          </div>
+        ) : null}
 
         {!loading && data && data.items.length === 0 ? (
           <div className="mt-8">

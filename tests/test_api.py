@@ -27,6 +27,24 @@ def register(client, email, full_name):
     return response.json()
 
 
+def test_slug_lookup_endpoints(client):
+    category = client.get("/api/categories").json()[0]
+    city = client.get("/api/cities").json()[0]
+    blog_category = client.get("/api/blog-categories").json()[0]
+
+    for path, item in (
+        ("categories", category),
+        ("cities", city),
+        ("blog-categories", blog_category),
+    ):
+        response = client.get(f"/api/{path}/slug/{item['slug']}")
+        assert response.status_code == 200, response.text
+        assert response.json()["id"] == item["id"]
+
+        missing = client.get(f"/api/{path}/slug/does-not-exist")
+        assert missing.status_code == 404
+
+
 def test_directory_flow(client):
     categories = client.get("/api/categories").json()
     cities = client.get("/api/cities").json()

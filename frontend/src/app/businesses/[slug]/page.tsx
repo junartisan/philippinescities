@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/components/auth-provider";
+import { AdSlot } from "@/components/adsense";
 import { BusinessArticles } from "@/components/business-articles";
 import { ClaimBox } from "@/components/claim-box";
 import { ReviewSection } from "@/components/review-section";
@@ -50,7 +51,7 @@ export default function BusinessDetailPage() {
     if (!slug) return;
     let active = true;
     setLoading(true);
-    api<Business>(`/api/businesses/slug/${slug}`)
+    api<Business>(`/api/businesses/slug/${encodeURIComponent(slug)}`)
       .then((data) => {
         if (active) {
           setBusiness(data);
@@ -206,7 +207,7 @@ export default function BusinessDetailPage() {
                 </dt>
                 <dd className="mt-1">
                   <Link
-                    href={`/businesses?category_id=${business.category.id}`}
+                    href={`/categories/${business.category.slug}`}
                     className="text-sm font-medium text-emerald-700 hover:text-emerald-800"
                   >
                     {business.category.name}
@@ -219,7 +220,7 @@ export default function BusinessDetailPage() {
                 </dt>
                 <dd className="mt-1">
                   <Link
-                    href={`/businesses?city_id=${business.city.id}`}
+                    href={`/cities/${business.city.slug}`}
                     className="text-sm font-medium text-emerald-700 hover:text-emerald-800"
                   >
                     {business.city.name}
@@ -257,6 +258,26 @@ export default function BusinessDetailPage() {
         </div>
 
         <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+          <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-slate-900">Explore</h2>
+            <div className="mt-3 space-y-2.5">
+              <Link
+                href={`/categories/${business.category.slug}`}
+                className="flex items-center gap-2.5 text-sm text-slate-600 hover:text-emerald-700"
+              >
+                <Store className="h-4 w-4 text-slate-400" />
+                More in {business.category.name}
+              </Link>
+              <Link
+                href={`/cities/${business.city.slug}`}
+                className="flex items-center gap-2.5 text-sm text-slate-600 hover:text-emerald-700"
+              >
+                <MapPin className="h-4 w-4 text-slate-400" />
+                Explore {business.city.name}
+              </Link>
+            </div>
+          </div>
+
           <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-semibold text-slate-900">Contact</h2>
             <div className="mt-3 space-y-3 text-sm">
@@ -300,6 +321,12 @@ export default function BusinessDetailPage() {
           {business.status === "approved" ? (
             <ClaimBox business={business} />
           ) : null}
+
+          <AdSlot
+            slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_BUSINESS_DETAIL}
+            format="rectangle"
+            minHeight={250}
+          />
 
           <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
             <div className="flex items-center gap-2">

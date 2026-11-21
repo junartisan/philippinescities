@@ -28,6 +28,14 @@ def list_cities(
     return db.scalars(stmt).all()
 
 
+@router.get("/slug/{slug}", response_model=CityOut)
+def get_city_by_slug(slug: str, db: Session = Depends(get_db)):
+    city = db.scalar(select(City).where(City.slug == slug))
+    if city is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="City not found")
+    return city
+
+
 @router.get("/{city_id}", response_model=CityOut)
 def get_city(city_id: int, db: Session = Depends(get_db)):
     city = db.get(City, city_id)

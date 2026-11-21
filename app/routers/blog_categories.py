@@ -17,6 +17,17 @@ def list_blog_categories(db: Session = Depends(get_db)):
     return db.scalars(select(BlogCategory).order_by(BlogCategory.name)).all()
 
 
+@router.get("/slug/{slug}", response_model=BlogCategoryOut)
+def get_blog_category_by_slug(slug: str, db: Session = Depends(get_db)):
+    category = db.scalar(select(BlogCategory).where(BlogCategory.slug == slug))
+    if category is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Blog category not found",
+        )
+    return category
+
+
 @admin_router.get("", response_model=list[BlogCategoryOut])
 def list_blog_categories_admin(
     _: User = Depends(get_current_admin),

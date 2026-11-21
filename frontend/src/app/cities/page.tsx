@@ -124,7 +124,7 @@ export default function CitiesPage() {
                       className="group rounded-xl border border-stone-200 transition hover:border-emerald-200 hover:bg-emerald-50/50"
                     >
                       <Link
-                        href={`/businesses?city_id=${city.id}`}
+                        href={`/cities/${city.slug}`}
                         className="block px-4 pt-2.5"
                       >
                         <span className="block text-sm font-medium text-slate-700 group-hover:text-emerald-700">
@@ -137,7 +137,7 @@ export default function CitiesPage() {
                         ) : null}
                       </Link>
                       <Link
-                        href={`/blog?city_id=${city.id}`}
+                        href={`/cities/${city.slug}#news`}
                         className="block px-4 pb-2.5 pt-1 text-xs font-medium text-emerald-700 hover:text-emerald-800"
                       >
                         News &amp; events

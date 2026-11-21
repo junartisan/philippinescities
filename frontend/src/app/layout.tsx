@@ -3,8 +3,11 @@ import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth-provider";
+import { AdsenseScript } from "@/components/adsense";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { StructuredData } from "@/components/structured-data";
+import { buildMetadata, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,13 +19,40 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const baseMetadata = buildMetadata({
+  title: `${SITE_NAME} — Business Directory`,
+  description: SITE_DESCRIPTION,
+  path: "/",
+});
+
 export const metadata: Metadata = {
+  ...baseMetadata,
   title: {
-    default: "Philippines Cities — Business Directory",
-    template: "%s | Philippines Cities",
+    default: `${SITE_NAME} — Business Directory`,
+    template: `%s | ${SITE_NAME}`,
   },
-  description:
-    "Find restaurants, hotels, services, and local businesses across the Philippines. Claim your listing, keep it updated, and earn reviews.",
+};
+
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: SITE_NAME,
+  url: SITE_URL,
+  description: SITE_DESCRIPTION,
+  inLanguage: "en-PH",
+  potentialAction: {
+    "@type": "SearchAction",
+    target: `${SITE_URL}/businesses?search={search_term_string}`,
+    "query-input": "required name=search_term_string",
+  },
+};
+
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: SITE_NAME,
+  url: SITE_URL,
+  description: SITE_DESCRIPTION,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -31,6 +61,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
       >
+        <StructuredData data={[websiteSchema, organizationSchema]} />
+        <AdsenseScript />
         <AuthProvider>
           <div className="flex min-h-screen flex-col bg-stone-50">
             <Suspense

@@ -12,6 +12,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
+import { AdSlot } from "@/components/adsense";
 import {
   Alert,
   Avatar,
@@ -36,7 +37,7 @@ export default function ArticleDetailPage() {
     if (!slug) return;
     let active = true;
     setLoading(true);
-    api<Article>(`/api/articles/${slug}`)
+    api<Article>(`/api/articles/${encodeURIComponent(slug)}`)
       .then((data) => {
         if (active) {
           setArticle(data);
@@ -169,18 +170,24 @@ export default function ArticleDetailPage() {
                 >
                   {article.business.name}
                 </Link>
-                <p className="mt-0.5 text-xs text-slate-500">
+                <Link
+                  href={`/categories/${article.business.category.slug}`}
+                  className="mt-0.5 block text-xs text-slate-500 hover:text-emerald-700"
+                >
                   {article.business.category.name}
-                </p>
+                </Link>
               </div>
             </div>
-            <p className="mt-4 flex items-center gap-1.5 text-xs text-slate-500">
+            <Link
+              href={`/cities/${article.business.city.slug}`}
+              className="mt-4 flex items-center gap-1.5 text-xs text-slate-500 hover:text-emerald-700"
+            >
               <MapPin className="h-3.5 w-3.5 text-slate-400" />
               {article.business.city.name}
               {article.business.city.province
                 ? `, ${article.business.city.province}`
                 : ""}
-            </p>
+            </Link>
             <div className="mt-4 flex flex-col gap-2">
               <Link
                 href={`/businesses/${article.business.slug}`}
@@ -211,6 +218,12 @@ export default function ArticleDetailPage() {
               </p>
             </div>
           ) : null}
+
+          <AdSlot
+            slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_DETAIL}
+            format="rectangle"
+            minHeight={250}
+          />
 
           <Alert tone="info">
             Updates are published by paid business owners and stay public

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/components/auth-provider";
+import { AdSlot } from "@/components/adsense";
 import { CategoryIcon } from "@/components/category-icon";
 import { BusinessCard } from "@/components/business-card";
 import {
@@ -153,7 +154,7 @@ export default function HomePage() {
                 return (
                   <Link
                     key={category.id}
-                    href={`/businesses?category_id=${category.id}`}
+                    href={`/categories/${category.slug}`}
                     className="group flex items-center gap-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md"
                   >
                     <span
@@ -230,6 +231,13 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section className="mx-auto max-w-6xl px-4 pb-2">
+        <AdSlot
+          slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME}
+          minHeight={140}
+        />
+      </section>
+
       <section className="mx-auto max-w-6xl px-4 py-16">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -259,7 +267,7 @@ export default function HomePage() {
             : cities.slice(0, 12).map((city) => (
                 <Link
                   key={city.id}
-                  href={`/businesses?city_id=${city.id}`}
+                  href={`/cities/${city.slug}`}
                   className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm transition hover:border-emerald-200 hover:text-emerald-700"
                 >
                   <MapPin className="h-3.5 w-3.5" />

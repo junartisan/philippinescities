@@ -438,6 +438,8 @@ class CityPost(TimestampMixin, Base):
     summary: Mapped[str | None] = mapped_column(String(500))
     body: Mapped[str] = mapped_column(Text, nullable=False)
     cover_image_url: Mapped[str | None] = mapped_column(String(500))
+    source_id: Mapped[str | None] = mapped_column(String(100), index=True)
+    source_url: Mapped[str | None] = mapped_column(String(500), index=True)
     post_type: Mapped[CityPostType] = mapped_column(
         enum_column(CityPostType), default=CityPostType.article, index=True, nullable=False
     )
