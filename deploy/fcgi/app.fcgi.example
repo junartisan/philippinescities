@@ -1,0 +1,22 @@
+#!/usr/bin/env python3
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(__file__))
+
+from flup.server.fcgi import WSGIServer
+
+from fcgi_app import application
+
+
+class ScriptNameStripper:
+    def __init__(self, wsgi_app):
+        self.wsgi_app = wsgi_app
+
+    def __call__(self, environ, start_response):
+        environ["SCRIPT_NAME"] = ""
+        return self.wsgi_app(environ, start_response)
+
+
+if __name__ == "__main__":
+    WSGIServer(ScriptNameStripper(application)).run()
