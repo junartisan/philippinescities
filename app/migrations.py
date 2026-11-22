@@ -133,3 +133,36 @@ def ensure_schema(engine: Engine) -> None:
                 "CREATE INDEX IF NOT EXISTS ix_city_posts_reviewed_by_id "
                 "ON city_posts (reviewed_by_id)"
             )
+
+    if "city_post_comments" in inspector.get_table_names():
+        with engine.begin() as connection:
+            connection.exec_driver_sql(
+                "CREATE INDEX IF NOT EXISTS ix_city_post_comments_city_post_id "
+                "ON city_post_comments (city_post_id)"
+            )
+            connection.exec_driver_sql(
+                "CREATE INDEX IF NOT EXISTS ix_city_post_comments_user_id "
+                "ON city_post_comments (user_id)"
+            )
+            connection.exec_driver_sql(
+                "CREATE INDEX IF NOT EXISTS ix_city_post_comments_created_at "
+                "ON city_post_comments (created_at)"
+            )
+
+    if "blog_contributor_profiles" in inspector.get_table_names():
+        existing = {
+            column["name"] for column in inspector.get_columns("blog_contributor_profiles")
+        }
+        with engine.begin() as connection:
+            if "headline" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE blog_contributor_profiles ADD COLUMN headline VARCHAR(120)"
+                )
+            if "bio" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE blog_contributor_profiles ADD COLUMN bio VARCHAR(1000)"
+                )
+            if "credentials" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE blog_contributor_profiles ADD COLUMN credentials VARCHAR(1000)"
+                )

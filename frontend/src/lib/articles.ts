@@ -5,6 +5,7 @@ export const ARTICLE_TYPE_LABELS: Record<ArticleType, string> = {
   service_update: "Service update",
   promo: "Promo",
   event: "Event",
+  sports: "Sports",
   other: "Update",
 };
 
@@ -24,6 +25,8 @@ export function articleTypeTone(value: ArticleType): ArticleTone {
       return "amber";
     case "event":
       return "violet";
+    case "sports":
+      return "emerald";
     default:
       return "stone";
   }

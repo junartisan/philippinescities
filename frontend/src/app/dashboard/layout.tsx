@@ -13,6 +13,7 @@ const tabs = [
   { href: "/dashboard/listings", label: "My listings" },
   { href: "/dashboard/billing", label: "Billing & payments" },
   { href: "/dashboard/claims", label: "My claims" },
+  { href: "/dashboard/blog-profile", label: "Writer profile" },
 ];
 
 export default function DashboardLayout({

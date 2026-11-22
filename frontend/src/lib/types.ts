@@ -7,6 +7,7 @@ export type ArticleType =
   | "service_update"
   | "promo"
   | "event"
+  | "sports"
   | "other";
 export type CityPostType = "article" | "event";
 export type CityPostReviewStatus = "draft" | "pending" | "approved" | "rejected";
@@ -230,6 +231,15 @@ export interface CityPostList {
   pages: number;
 }
 
+export interface CityPostComment {
+  id: number;
+  city_post_id: number;
+  body: string;
+  user: UserPublic;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface CityPostPayload {
   city_id: number;
   blog_category_id: number | null;
@@ -248,12 +258,25 @@ export interface BlogContributorProfile {
   user_id: number;
   status: BlogContributorStatus;
   message: string | null;
+  headline: string | null;
+  bio: string | null;
+  credentials: string | null;
   admin_notes: string | null;
   reviewed_at: string | null;
   user: UserBrief;
   cities: City[];
   created_at: string;
   updated_at: string;
+}
+
+export interface WriterCredential {
+  user_id: number;
+  full_name: string;
+  avatar_url: string | null;
+  headline: string | null;
+  bio: string | null;
+  credentials: string | null;
+  cities: string[];
 }
 
 export interface ContributorStatus {

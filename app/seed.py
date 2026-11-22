@@ -18,6 +18,10 @@ DEFAULT_CATEGORIES = [
     ("Professional Services", "Legal, accounting, and consulting services"),
     ("Technology", "IT services, software companies, and electronics"),
     ("Entertainment & Leisure", "Cinemas, recreation centers, and event venues"),
+    ("Sports & Recreation", "Sports clubs, courts, fields, and recreational facilities"),
+    ("Fitness Centers", "Gyms, training studios, and fitness classes"),
+    ("Sports Equipment & Apparel", "Sports gear, uniforms, and equipment shops"),
+    ("Sports Events & Venues", "Tournaments, leagues, stadiums, and event organizers"),
     ("Home Services", "Contractors, cleaning, and repair services"),
 ]
 
@@ -27,6 +31,7 @@ DEFAULT_BLOG_CATEGORIES = [
     ("Food & dining", "Restaurants, cafes, and local flavors"),
     ("Things to do", "Activities, attractions, and weekend ideas"),
     ("Business features", "Profiles of local businesses and entrepreneurs"),
+    ("Sports", "Sports news, teams, events, and athlete stories"),
     ("Community stories", "People, places, and stories from the community"),
 ]
 

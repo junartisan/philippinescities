@@ -4,12 +4,14 @@ import {
   Building2,
   Car,
   Cpu,
+  Dumbbell,
   GraduationCap,
   HeartPulse,
   ShoppingBag,
   Sparkles,
   Store,
   Ticket,
+  Trophy,
   UtensilsCrossed,
   Wrench,
 } from "lucide-react";
@@ -26,6 +28,12 @@ function iconFor(slug: string, className?: string) {
   }
   if (slug.includes("health") || slug.includes("medical")) {
     return <HeartPulse className={className} aria-hidden="true" />;
+  }
+  if (slug.includes("sport")) {
+    return <Trophy className={className} aria-hidden="true" />;
+  }
+  if (slug.includes("fitness")) {
+    return <Dumbbell className={className} aria-hidden="true" />;
   }
   if (slug.includes("beauty") || slug.includes("wellness")) {
     return <Sparkles className={className} aria-hidden="true" />;

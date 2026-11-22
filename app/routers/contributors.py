@@ -20,11 +20,14 @@ from app.models import (
 )
 from app.schemas import (
     BlogContributorApply,
+    BlogContributorProfileOut,
+    BlogContributorProfileUpdate,
     BlogContributorStatusOut,
     CityPostList,
     CityPostOut,
     ContributorPostCreate,
     ContributorPostUpdate,
+    WriterCredentialOut,
 )
 from app.utils import plain_text_length, sanitize_post_body, unique_slug
 
@@ -129,6 +132,59 @@ def get_contributor_status(
         reviewed_at=profile.reviewed_at if profile else None,
         can_apply=profile is None or profile.status == BlogContributorStatus.rejected,
         cities=profile.cities if profile else [],
+    )
+
+
+@router.get("/profile", response_model=BlogContributorProfileOut)
+def get_writer_profile(
+    user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    return _require_contributor(db, user)
+
+
+@router.patch("/profile", response_model=BlogContributorProfileOut)
+def update_writer_profile(
+    payload: BlogContributorProfileUpdate,
+    user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    profile = _require_contributor(db, user)
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        if isinstance(value, str):
+            value = value.strip() or None
+        setattr(profile, field, value)
+    db.add(profile)
+    db.commit()
+    db.refresh(profile)
+    return profile
+
+
+@router.get("/writers/{user_id}", response_model=WriterCredentialOut)
+def get_writer_credential(user_id: int, db: Session = Depends(get_db)):
+    profile = db.scalar(
+        select(BlogContributorProfile)
+        .options(
+            joinedload(BlogContributorProfile.user),
+            selectinload(BlogContributorProfile.cities),
+        )
+        .where(
+            BlogContributorProfile.user_id == user_id,
+            BlogContributorProfile.status == BlogContributorStatus.approved,
+        )
+    )
+    if profile is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Writer profile not found"
+        )
+    return WriterCredentialOut(
+        user_id=profile.user_id,
+        full_name=profile.user.full_name,
+        avatar_url=profile.user.avatar_url,
+        headline=profile.headline,
+        bio=profile.bio,
+        credentials=profile.credentials,
+        cities=[city.name for city in profile.cities],
     )
 
 

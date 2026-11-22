@@ -28,7 +28,7 @@ export function SiteFooter() {
             </li>
             <li>
               <Link className="hover:text-emerald-700" href="/articles">
-                Business updates
+                Business Update
               </Link>
             </li>
             <li>

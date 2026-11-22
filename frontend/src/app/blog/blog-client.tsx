@@ -254,7 +254,16 @@ export function BlogClient() {
           </div>
         ) : null}
 
-        <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-8 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Recent posts</h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Latest city guides, stories, and events.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {loading
             ? Array.from({ length: 6 }).map((_, index) => (
                 <SkeletonCard key={index} />

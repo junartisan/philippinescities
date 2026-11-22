@@ -12,33 +12,42 @@ function excerpt(post: CityPost): string {
 
 export function CityPostCard({ post }: { post: CityPost }) {
   return (
-    <Link
-      href={`/blog/${post.slug}`}
-      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md"
-    >
-      {post.cover_image_url ? (
-        <div
-          role="img"
-          aria-label={post.title}
-          className="h-40 w-full bg-stone-200 bg-cover bg-center"
-          style={{ backgroundImage: `url(${post.cover_image_url})` }}
-        />
-      ) : null}
+    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md">
+      <Link href={`/blog/${post.slug}`} className="block" aria-label={post.title}>
+        {post.cover_image_url ? (
+          <div
+            role="img"
+            aria-label={post.title}
+            className="h-40 w-full bg-stone-200 bg-cover bg-center"
+            style={{ backgroundImage: `url(${post.cover_image_url})` }}
+          />
+        ) : null}
+      </Link>
       <div className="flex flex-1 flex-col p-5">
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone={cityPostTypeTone(post.post_type)}>
             {CITY_POST_TYPE_LABELS[post.post_type]}
           </Badge>
           {post.blog_category ? (
-            <Badge tone="sky">{post.blog_category.name}</Badge>
+            <Link
+              href={`/blog/categories/${post.blog_category.slug}`}
+              className="rounded-full transition hover:opacity-80"
+            >
+              <Badge tone="sky">{post.blog_category.name}</Badge>
+            </Link>
           ) : null}
           <span className="text-xs text-slate-400">
             {formatDate(post.published_at)}
           </span>
         </div>
 
-        <h3 className="mt-3 line-clamp-2 text-lg font-semibold tracking-tight text-slate-900 group-hover:text-emerald-700">
-          {post.title}
+        <h3 className="mt-3 line-clamp-2 text-lg font-semibold tracking-tight text-slate-900">
+          <Link
+            href={`/blog/${post.slug}`}
+            className="transition group-hover:text-emerald-700"
+          >
+            {post.title}
+          </Link>
         </h3>
         <p className="mt-2 line-clamp-3 flex-1 text-sm leading-6 text-slate-500">
           {excerpt(post)}
@@ -65,6 +74,6 @@ export function CityPostCard({ post }: { post: CityPost }) {
           ) : null}
         </div>
       </div>
-    </Link>
+    </article>
   );
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import {
   ArrowRight,
+  Award,
   CheckCircle2,
   ClipboardList,
   Clock3,
@@ -320,6 +321,16 @@ export default function DashboardPage() {
                 <span className="inline-flex items-center gap-2">
                   <Newspaper className="h-4 w-4 text-slate-400" />
                   City blog contributor
+                </span>
+                <ArrowRight className="h-4 w-4 text-stone-300" />
+              </Link>
+              <Link
+                href="/dashboard/blog-profile"
+                className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm text-slate-600 hover:bg-stone-50 hover:text-slate-900"
+              >
+                <span className="inline-flex items-center gap-2">
+                  <Award className="h-4 w-4 text-slate-400" />
+                  Writer profile
                 </span>
                 <ArrowRight className="h-4 w-4 text-stone-300" />
               </Link>

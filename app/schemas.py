@@ -403,6 +403,19 @@ class CityPostPublicList(BaseModel):
     pages: int
 
 
+class CityPostCommentCreate(BaseModel):
+    body: str = Field(min_length=1, max_length=2000)
+
+
+class CityPostCommentOut(ORMModel):
+    id: int
+    city_post_id: int
+    body: str
+    user: UserPublic
+    created_at: datetime
+    updated_at: datetime
+
+
 class CityPostReviewDecision(BaseModel):
     admin_notes: str | None = Field(default=None, max_length=1000)
 
@@ -421,12 +434,46 @@ class BlogContributorCitiesUpdate(BaseModel):
     city_ids: list[int] = Field(default_factory=list, max_length=20)
 
 
+class BlogContributorProfileUpdate(BaseModel):
+    headline: str | None = Field(default=None, max_length=120)
+    bio: str | None = Field(default=None, max_length=1000)
+    credentials: str | None = Field(default=None, max_length=1000)
+
+
+class BlogContributorProfileOut(ORMModel):
+    id: int
+    user_id: int
+    status: BlogContributorStatus
+    message: str | None
+    headline: str | None
+    bio: str | None
+    credentials: str | None
+    reviewed_at: datetime | None
+    user: UserBrief
+    cities: list[CityOut]
+    created_at: datetime
+    updated_at: datetime
+
+
+class WriterCredentialOut(BaseModel):
+    user_id: int
+    full_name: str
+    avatar_url: str | None
+    headline: str | None
+    bio: str | None
+    credentials: str | None
+    cities: list[str]
+
+
 class BlogContributorOut(ORMModel):
     id: int
     user_id: int
     status: BlogContributorStatus
     message: str | None
     admin_notes: str | None
+    headline: str | None
+    bio: str | None
+    credentials: str | None
     reviewed_at: datetime | None
     user: UserBrief
     cities: list[CityOut]

@@ -894,6 +894,62 @@ def test_city_blog_flow(client):
     assert client.get(f"/api/city-posts/{event.json()['slug']}").status_code == 404
 
 
+def test_city_post_comments(client):
+    city_id = client.get("/api/cities").json()[0]["id"]
+    admin_headers = login(client, "admin@example.com", "adminpassword")
+    post = client.post(
+        "/api/admin/city-posts",
+        headers=admin_headers,
+        json={
+            "city_id": city_id,
+            "title": "City Blog: Comment thread",
+            "summary": "A post with reader comments.",
+            "body": "Readers can share their thoughts on this city guide.",
+            "is_published": True,
+        },
+    )
+    assert post.status_code == 201, post.text
+    slug = post.json()["slug"]
+
+    register(client, "commenter@example.com", "City Commenter")
+    commenter_headers = login(client, "commenter@example.com", "password123")
+    register(client, "other-commenter@example.com", "Other Commenter")
+    other_headers = login(client, "other-commenter@example.com", "password123")
+
+    assert client.get(f"/api/city-posts/{slug}/comments").json() == []
+
+    anonymous = client.post(
+        f"/api/city-posts/{slug}/comments", json={"body": "Anonymous comment"}
+    )
+    assert anonymous.status_code == 401
+
+    created = client.post(
+        f"/api/city-posts/{slug}/comments",
+        headers=commenter_headers,
+        json={"body": "  Great local guide!  "},
+    )
+    assert created.status_code == 201, created.text
+    comment = created.json()
+    assert comment["body"] == "Great local guide!"
+    assert comment["user"]["full_name"] == "City Commenter"
+
+    comments = client.get(f"/api/city-posts/{slug}/comments").json()
+    assert len(comments) == 1
+    assert comments[0]["id"] == comment["id"]
+
+    forbidden = client.delete(
+        f"/api/city-posts/{slug}/comments/{comment['id']}", headers=other_headers
+    )
+    assert forbidden.status_code == 403
+
+    deleted = client.delete(
+        f"/api/city-posts/{slug}/comments/{comment['id']}",
+        headers=commenter_headers,
+    )
+    assert deleted.status_code == 204
+    assert client.get(f"/api/city-posts/{slug}/comments").json() == []
+
+
 def test_city_blog_category_flow(client):
     cities = client.get("/api/cities").json()
     admin_headers = login(client, "admin@example.com", "adminpassword")
@@ -1283,6 +1339,63 @@ def test_blog_contributor_flow(client):
     )
     assert reapply.status_code == 200
     assert reapply.json()["status"] == "pending"
+
+
+def test_writer_profile(client):
+    city_id = client.get("/api/cities").json()[0]["id"]
+    admin_headers = login(client, "admin@example.com", "adminpassword")
+    writer = register(client, "writerprofile@example.com", "Profile Writer")
+    writer_headers = login(client, "writerprofile@example.com", "password123")
+
+    forbidden = client.get("/api/contributor/profile", headers=writer_headers)
+    assert forbidden.status_code == 403
+
+    applied = client.post(
+        "/api/contributor/apply",
+        headers=writer_headers,
+        json={"message": "I write local guides.", "city_ids": [city_id]},
+    )
+    assert applied.status_code == 200
+
+    profiles = client.get(
+        "/api/admin/contributors?status=pending", headers=admin_headers
+    ).json()
+    profile_id = next(
+        profile["id"]
+        for profile in profiles
+        if profile["user"]["email"] == "writerprofile@example.com"
+    )
+    approved = client.post(
+        f"/api/admin/contributors/{profile_id}/approve",
+        headers=admin_headers,
+        json={"admin_notes": "Approved", "city_ids": [city_id]},
+    )
+    assert approved.status_code == 200, approved.text
+
+    updated = client.patch(
+        "/api/contributor/profile",
+        headers=writer_headers,
+        json={
+            "headline": "Local culture writer",
+            "bio": "I cover community stories and travel guides.",
+            "credentials": "Five years covering local news.",
+        },
+    )
+    assert updated.status_code == 200, updated.text
+    profile = updated.json()
+    assert profile["headline"] == "Local culture writer"
+    assert profile["credentials"] == "Five years covering local news."
+
+    credential = client.get(f"/api/contributor/writers/{writer['id']}").json()
+    assert credential["full_name"] == "Profile Writer"
+    assert credential["headline"] == "Local culture writer"
+    assert credential["bio"] == "I cover community stories and travel guides."
+    assert credential["credentials"] == "Five years covering local news."
+    assert len(credential["cities"]) == 1
+    assert "admin_notes" not in credential
+
+    missing = client.get("/api/contributor/writers/999999")
+    assert missing.status_code == 404
 
 
 def test_cover_image_upload_limit(client):

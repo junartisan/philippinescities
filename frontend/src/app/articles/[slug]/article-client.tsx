@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { AdSlot } from "@/components/adsense";
+import { ShareButtons } from "@/components/share-buttons";
 import {
   Alert,
   Avatar,
@@ -148,6 +149,12 @@ export default function ArticleDetailPage() {
                 </p>
               </div>
             </div>
+
+            <ShareButtons
+              title={article.title}
+              path={`/articles/${article.slug}`}
+              heading="Share this update"
+            />
           </div>
         </article>
 

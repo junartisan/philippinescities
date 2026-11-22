@@ -58,6 +58,7 @@ class ArticleType(str, enum.Enum):
     service_update = "service_update"
     promo = "promo"
     event = "event"
+    sports = "sports"
     other = "other"
 
 
@@ -185,6 +186,11 @@ class User(TimestampMixin, Base):
         "CityPost",
         back_populates="author",
         foreign_keys="CityPost.author_id",
+    )
+    city_post_comments: Mapped[list[CityPostComment]] = relationship(
+        "CityPostComment",
+        back_populates="user",
+        cascade="all, delete-orphan",
     )
     blog_contributor_profile: Mapped[BlogContributorProfile | None] = relationship(
         "BlogContributorProfile",
@@ -469,6 +475,25 @@ class CityPost(TimestampMixin, Base):
         back_populates="city_posts", foreign_keys=[author_id]
     )
     reviewed_by: Mapped[User | None] = relationship(foreign_keys=[reviewed_by_id])
+    comments: Mapped[list[CityPostComment]] = relationship(
+        back_populates="city_post", cascade="all, delete-orphan"
+    )
+
+
+class CityPostComment(TimestampMixin, Base):
+    __tablename__ = "city_post_comments"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    city_post_id: Mapped[int] = mapped_column(
+        ForeignKey("city_posts.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    body: Mapped[str] = mapped_column(String(2000), nullable=False)
+
+    city_post: Mapped[CityPost] = relationship(back_populates="comments")
+    user: Mapped[User] = relationship(back_populates="city_post_comments")
 
 
 class BlogContributorProfile(TimestampMixin, Base):
@@ -486,6 +511,9 @@ class BlogContributorProfile(TimestampMixin, Base):
     )
     message: Mapped[str | None] = mapped_column(String(2000))
     admin_notes: Mapped[str | None] = mapped_column(String(1000))
+    headline: Mapped[str | None] = mapped_column(String(120))
+    bio: Mapped[str | None] = mapped_column(String(1000))
+    credentials: Mapped[str | None] = mapped_column(String(1000))
     reviewed_by_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL")
     )

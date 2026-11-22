@@ -9,10 +9,13 @@ import {
   Clock3,
   MapPin,
   Newspaper,
-  UserRound,
 } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { AdSlot } from "@/components/adsense";
+import { CityPostComments } from "@/components/city-post-comments";
+import { RecentPosts } from "@/components/recent-posts";
+import { ShareButtons } from "@/components/share-buttons";
+import { WriterCredentialCard } from "@/components/writer-credential-card";
 import {
   Alert,
   Avatar,
@@ -93,7 +96,12 @@ export default function CityPostDetailPage() {
                 {CITY_POST_TYPE_LABELS[post.post_type]}
               </Badge>
               {post.blog_category ? (
-                <Badge tone="sky">{post.blog_category.name}</Badge>
+                <Link
+                  href={`/blog/categories/${post.blog_category.slug}`}
+                  className="rounded-full transition hover:opacity-80"
+                >
+                  <Badge tone="sky">{post.blog_category.name}</Badge>
+                </Link>
               ) : null}
               <span className="inline-flex items-center gap-1 text-xs text-slate-400">
                 <Clock3 className="h-3.5 w-3.5" />
@@ -159,7 +167,11 @@ export default function CityPostDetailPage() {
                 <p className="text-xs text-slate-500">City blog author</p>
               </div>
             </div>
+
+            <ShareButtons title={post.title} path={`/blog/${post.slug}`} />
           </div>
+
+          <CityPostComments slug={post.slug} />
         </article>
 
         <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
@@ -202,16 +214,13 @@ export default function CityPostDetailPage() {
             </div>
           </div>
 
+          <RecentPosts excludeSlug={post.slug} />
+
           {post.author ? (
-            <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-2">
-                <UserRound className="h-4 w-4 text-emerald-600" />
-                <h2 className="text-sm font-semibold text-slate-900">Author</h2>
-              </div>
-              <p className="mt-3 text-sm text-slate-600">
-                {post.author.full_name}
-              </p>
-            </div>
+            <WriterCredentialCard
+              userId={post.author.id}
+              name={post.author.full_name}
+            />
           ) : null}
 
           <AdSlot

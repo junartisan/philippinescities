@@ -95,7 +95,7 @@ export function ArticlesClient() {
             From paid listings
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-            Business updates
+            Business Update
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
             New products, service changes, promos, and events published by

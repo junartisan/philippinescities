@@ -13,16 +13,23 @@ import {
   X,
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
+import { NavDropdown } from "@/components/nav-dropdown";
 import { Avatar, buttonClass } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
-const navItems = [
-  { href: "/businesses", label: "Directory" },
-  { href: "/articles", label: "Updates" },
-  { href: "/blog", label: "City blog" },
-  { href: "/categories", label: "Categories" },
-  { href: "/cities", label: "Cities" },
+const navGroups = [
+  {
+    label: "Directory",
+    links: [
+      { href: "/businesses", label: "All businesses" },
+      { href: "/articles", label: "Business Update" },
+      { href: "/categories", label: "Categories" },
+      { href: "/cities", label: "Cities" },
+    ],
+  },
 ];
+
+const topArticlesLink = { href: "/blog", label: "Top Articles" };
 
 export function SiteHeader() {
   const { user, loading, logout } = useAuth();
@@ -62,20 +69,28 @@ export function SiteHeader() {
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "rounded-full px-3.5 py-2 text-sm font-medium transition-colors",
-                isActive(item.href)
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "text-slate-600 hover:bg-stone-100 hover:text-slate-900",
-              )}
-            >
-              {item.label}
-            </Link>
+          {navGroups.map((group) => (
+            <NavDropdown
+              key={group.label}
+              label={group.label}
+              links={group.links}
+              triggerClass="rounded-full px-3.5 py-2 text-sm font-medium transition-colors"
+              activeClass="bg-emerald-50 text-emerald-700"
+              inactiveClass="text-slate-600 hover:bg-stone-100 hover:text-slate-900"
+              linkClass="px-3 py-2"
+            />
           ))}
+          <Link
+            href={topArticlesLink.href}
+            className={cn(
+              "rounded-full px-3.5 py-2 text-sm font-medium transition-colors",
+              isActive(topArticlesLink.href)
+                ? "bg-emerald-50 text-emerald-700"
+                : "text-slate-600 hover:bg-stone-100 hover:text-slate-900",
+            )}
+          >
+            {topArticlesLink.label}
+          </Link>
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
@@ -155,21 +170,31 @@ export function SiteHeader() {
       {open ? (
         <div className="border-t border-stone-200 bg-white px-4 py-4 md:hidden">
           <nav className="flex flex-col gap-1">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className={cn(
-                  "rounded-xl px-3 py-2.5 text-sm font-medium",
-                  isActive(item.href)
-                    ? "bg-emerald-50 text-emerald-700"
-                    : "text-slate-600 hover:bg-stone-100",
-                )}
-              >
-                {item.label}
-              </Link>
+            {navGroups.map((group) => (
+              <NavDropdown
+                key={group.label}
+                label={group.label}
+                links={group.links}
+                variant="inline"
+                triggerClass="rounded-xl px-3 py-2.5 text-sm font-medium"
+                activeClass="bg-emerald-50 text-emerald-700"
+                inactiveClass="text-slate-600 hover:bg-stone-100"
+                linkClass="px-3 py-2.5"
+                onNavigate={() => setOpen(false)}
+              />
             ))}
+            <Link
+              href={topArticlesLink.href}
+              onClick={() => setOpen(false)}
+              className={cn(
+                "rounded-xl px-3 py-2.5 text-sm font-medium",
+                isActive(topArticlesLink.href)
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "text-slate-600 hover:bg-stone-100",
+              )}
+            >
+              {topArticlesLink.label}
+            </Link>
           </nav>
           <div className="mt-4 border-t border-stone-200 pt-4">
             {loading ? null : user ? (

@@ -5,13 +5,22 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { RequireAuth } from "@/components/guards";
+import {
+  isNavLinkActive,
+  NavDropdown,
+  type NavLink,
+} from "@/components/nav-dropdown";
 import { cn } from "@/lib/utils";
 import type { Role } from "@/lib/types";
 
 const MODERATOR_ROLES: Role[] = ["admin", "editor", "supervisor"];
 const EDITOR_ROLES: Role[] = ["admin", "editor"];
+const ADMIN_ROLES: Role[] = ["admin"];
 
-const allTabs = [
+type AdminLink = NavLink & { roles: Role[] };
+type AdminItem = AdminLink | { label: string; links: AdminLink[] };
+
+const allItems: AdminItem[] = [
   {
     href: "/admin",
     label: "Overview",
@@ -19,31 +28,37 @@ const allTabs = [
     roles: MODERATOR_ROLES,
   },
   {
-    href: "/admin/businesses",
-    label: "Listings",
-    roles: MODERATOR_ROLES,
+    label: "Directory",
+    links: [
+      { href: "/admin/businesses", label: "Listings", roles: MODERATOR_ROLES },
+      {
+        href: "/admin/taxonomy",
+        label: "Categories & cities",
+        roles: ADMIN_ROLES,
+      },
+    ],
+  },
+  {
+    label: "Blog & articles",
+    links: [
+      { href: "/admin/articles", label: "Articles", roles: EDITOR_ROLES },
+      { href: "/admin/blog", label: "City blog", roles: EDITOR_ROLES },
+      {
+        href: "/admin/contributors",
+        label: "Contributors",
+        roles: EDITOR_ROLES,
+      },
+    ],
   },
   {
     href: "/admin/reviews",
     label: "Reviews",
     roles: MODERATOR_ROLES,
   },
-  { href: "/admin/articles", label: "Articles", roles: EDITOR_ROLES },
-  { href: "/admin/blog", label: "City blog", roles: EDITOR_ROLES },
-  {
-    href: "/admin/contributors",
-    label: "Contributors",
-    roles: EDITOR_ROLES,
-  },
-  { href: "/admin/claims", label: "Claims", roles: ["admin"] as Role[] },
-  { href: "/admin/payments", label: "Payments", roles: ["admin"] as Role[] },
-  { href: "/admin/featured", label: "Featured", roles: ["admin"] as Role[] },
-  { href: "/admin/users", label: "Users", roles: ["admin"] as Role[] },
-  {
-    href: "/admin/taxonomy",
-    label: "Categories & cities",
-    roles: ["admin"] as Role[],
-  },
+  { href: "/admin/claims", label: "Claims", roles: ADMIN_ROLES },
+  { href: "/admin/payments", label: "Payments", roles: ADMIN_ROLES },
+  { href: "/admin/featured", label: "Featured", roles: ADMIN_ROLES },
+  { href: "/admin/users", label: "Users", roles: ADMIN_ROLES },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
@@ -51,7 +66,15 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   const isEditor = user?.role === "editor";
-  const tabs = allTabs.filter((tab) => Boolean(user && tab.roles.includes(user.role)));
+  const canSee = (link: AdminLink) =>
+    Boolean(user && link.roles.includes(user.role));
+  const items = allItems
+    .map((item) =>
+      "links" in item
+        ? { ...item, links: item.links.filter(canSee) }
+        : item,
+    )
+    .filter((item) => ("links" in item ? item.links.length > 0 : canSee(item)));
   const consoleLabel = isAdmin
     ? "Admin console"
     : isEditor
@@ -83,15 +106,28 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </Link>
         </div>
 
-        <nav className="mt-6 flex gap-1 overflow-x-auto border-b border-stone-200">
-          {tabs.map((tab) => {
-            const active = tab.exact
-              ? pathname === tab.href
-              : pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+        <nav className="mt-6 flex flex-wrap gap-1 border-b border-stone-200">
+          {items.map((item) => {
+            if ("links" in item) {
+              return (
+                <NavDropdown
+                  key={item.label}
+                  label={item.label}
+                  links={item.links}
+                  triggerClass="-mb-px whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition-colors"
+                  activeClass="border-violet-600 text-violet-700"
+                  inactiveClass="border-transparent text-slate-500 hover:text-slate-800"
+                  linkClass="px-3 py-2"
+                  activeLinkClass="bg-violet-50 text-violet-700"
+                  inactiveLinkClass="text-slate-600 hover:bg-stone-100 hover:text-slate-900"
+                />
+              );
+            }
+            const active = isNavLinkActive(pathname, item);
             return (
               <Link
-                key={tab.href}
-                href={tab.href}
+                key={item.href}
+                href={item.href}
                 className={cn(
                   "-mb-px whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition-colors",
                   active
@@ -99,7 +135,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                     : "border-transparent text-slate-500 hover:text-slate-800",
                 )}
               >
-                {tab.label}
+                {item.label}
               </Link>
             );
           })}
