@@ -5,7 +5,7 @@ import { StructuredData } from "@/components/structured-data";
 import { absoluteUrl, buildMetadata, excerpt, fetchSeoData } from "@/lib/seo";
 import type { Business } from "@/lib/types";
 
-type Params = Promise<{ slug: string }> | { slug: string };
+type Params = Promise<{ slug: string }>;
 
 type MetadataProps = {
   params: Params;
