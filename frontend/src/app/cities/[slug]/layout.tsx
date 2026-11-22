@@ -1,14 +1,18 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
+import { DynamicMarker } from "@/components/dynamic-marker";
 import { StructuredData } from "@/components/structured-data";
 import { absoluteUrl, buildMetadata, fetchSeoData } from "@/lib/seo";
 import type { City } from "@/lib/types";
 
 type Params = Promise<{ slug: string }> | { slug: string };
 
-type Props = {
-  children: ReactNode;
+type MetadataProps = {
   params: Params;
+};
+
+type Props = MetadataProps & {
+  children: ReactNode;
 };
 
 async function resolveSlug(params: Params): Promise<string> {
@@ -24,7 +28,7 @@ async function loadCity(slug: string): Promise<City | null> {
   return fetchSeoData<City>(`/api/cities/slug/${encodeURIComponent(slug)}`);
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params }: MetadataProps): Promise<Metadata> {
   const slug = await resolveSlug(params);
   const city = await loadCity(slug);
   const path = seoPath(slug);
@@ -49,10 +53,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
 }
 
-export default async function CityDetailLayout({ children, params }: Props) {
+async function CityStructuredData({ params }: MetadataProps) {
   const slug = await resolveSlug(params);
   const city = await loadCity(slug);
-  if (!city) return children;
+  if (!city) return null;
 
   const path = seoPath(slug);
   const label = [city.name, city.province].filter(Boolean).join(", ");
@@ -85,9 +89,16 @@ export default async function CityDetailLayout({ children, params }: Props) {
     ],
   };
 
+  return <StructuredData data={[citySchema, breadcrumbs]} />;
+}
+
+export default function CityDetailLayout({ children, params }: Props) {
   return (
     <>
-      <StructuredData data={[citySchema, breadcrumbs]} />
+      <DynamicMarker />
+      <Suspense>
+        <CityStructuredData params={params} />
+      </Suspense>
       {children}
     </>
   );

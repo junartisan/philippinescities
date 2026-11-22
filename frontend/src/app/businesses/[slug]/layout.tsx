@@ -1,13 +1,24 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
+import { DynamicMarker } from "@/components/dynamic-marker";
 import { StructuredData } from "@/components/structured-data";
 import { absoluteUrl, buildMetadata, excerpt, fetchSeoData } from "@/lib/seo";
 import type { Business } from "@/lib/types";
 
-type Props = {
-  children: ReactNode;
-  params: Promise<{ slug: string }>;
+type Params = Promise<{ slug: string }> | { slug: string };
+
+type MetadataProps = {
+  params: Params;
 };
+
+type Props = MetadataProps & {
+  children: ReactNode;
+};
+
+async function resolveSlug(params: Params): Promise<string> {
+  const { slug } = await Promise.resolve(params);
+  return slug;
+}
 
 function seoPath(slug: string): string {
   return `/businesses/${slug}`;
@@ -19,8 +30,8 @@ async function loadBusiness(slug: string): Promise<Business | null> {
   );
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
+export async function generateMetadata({ params }: MetadataProps): Promise<Metadata> {
+  const slug = await resolveSlug(params);
   const business = await loadBusiness(slug);
   const path = seoPath(slug);
 
@@ -46,13 +57,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
 }
 
-export default async function BusinessDetailLayout({
-  children,
-  params,
-}: Props) {
-  const { slug } = await params;
+async function BusinessStructuredData({ params }: MetadataProps) {
+  const slug = await resolveSlug(params);
   const business = await loadBusiness(slug);
-  if (!business) return children;
+  if (!business) return null;
 
   const path = seoPath(slug);
   const schema = {
@@ -95,9 +103,16 @@ export default async function BusinessDetailLayout({
     ],
   };
 
+  return <StructuredData data={[schema, breadcrumbs]} />;
+}
+
+export default function BusinessDetailLayout({ children, params }: Props) {
   return (
     <>
-      <StructuredData data={[schema, breadcrumbs]} />
+      <DynamicMarker />
+      <Suspense>
+        <BusinessStructuredData params={params} />
+      </Suspense>
       {children}
     </>
   );

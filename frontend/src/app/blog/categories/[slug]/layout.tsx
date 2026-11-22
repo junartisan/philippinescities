@@ -1,14 +1,18 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
+import { DynamicMarker } from "@/components/dynamic-marker";
 import { StructuredData } from "@/components/structured-data";
 import { absoluteUrl, buildMetadata, fetchSeoData } from "@/lib/seo";
 import type { BlogCategory } from "@/lib/types";
 
 type Params = Promise<{ slug: string }> | { slug: string };
 
-type Props = {
-  children: ReactNode;
+type MetadataProps = {
   params: Params;
+};
+
+type Props = MetadataProps & {
+  children: ReactNode;
 };
 
 async function resolveSlug(params: Params): Promise<string> {
@@ -26,7 +30,7 @@ async function loadBlogCategory(slug: string): Promise<BlogCategory | null> {
   );
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params }: MetadataProps): Promise<Metadata> {
   const slug = await resolveSlug(params);
   const category = await loadBlogCategory(slug);
   const path = seoPath(slug);
@@ -51,13 +55,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
 }
 
-export default async function BlogCategoryDetailLayout({
-  children,
-  params,
-}: Props) {
+async function BlogCategoryStructuredData({ params }: MetadataProps) {
   const slug = await resolveSlug(params);
   const category = await loadBlogCategory(slug);
-  if (!category) return children;
+  if (!category) return null;
 
   const path = seoPath(slug);
   const schema = {
@@ -90,9 +91,16 @@ export default async function BlogCategoryDetailLayout({
     ],
   };
 
+  return <StructuredData data={[schema, breadcrumbs]} />;
+}
+
+export default function BlogCategoryDetailLayout({ children, params }: Props) {
   return (
     <>
-      <StructuredData data={[schema, breadcrumbs]} />
+      <DynamicMarker />
+      <Suspense>
+        <BlogCategoryStructuredData params={params} />
+      </Suspense>
       {children}
     </>
   );

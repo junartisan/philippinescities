@@ -1,13 +1,24 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
+import { DynamicMarker } from "@/components/dynamic-marker";
 import { StructuredData } from "@/components/structured-data";
 import { absoluteUrl, buildMetadata, excerpt, fetchSeoData, plainText } from "@/lib/seo";
 import type { CityPost } from "@/lib/types";
 
-type Props = {
-  children: ReactNode;
-  params: Promise<{ slug: string }>;
+type Params = Promise<{ slug: string }> | { slug: string };
+
+type MetadataProps = {
+  params: Params;
 };
+
+type Props = MetadataProps & {
+  children: ReactNode;
+};
+
+async function resolveSlug(params: Params): Promise<string> {
+  const { slug } = await Promise.resolve(params);
+  return slug;
+}
 
 function seoPath(slug: string): string {
   return `/blog/${slug}`;
@@ -17,8 +28,8 @@ async function loadPost(slug: string): Promise<CityPost | null> {
   return fetchSeoData<CityPost>(`/api/city-posts/${encodeURIComponent(slug)}`);
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
+export async function generateMetadata({ params }: MetadataProps): Promise<Metadata> {
+  const slug = await resolveSlug(params);
   const post = await loadPost(slug);
   const path = seoPath(slug);
 
@@ -46,13 +57,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
 }
 
-export default async function BlogPostDetailLayout({
-  children,
-  params,
-}: Props) {
-  const { slug } = await params;
+async function PostStructuredData({ params }: MetadataProps) {
+  const slug = await resolveSlug(params);
   const post = await loadPost(slug);
-  if (!post) return children;
+  if (!post) return null;
 
   const path = seoPath(slug);
   const schema = {
@@ -90,9 +98,16 @@ export default async function BlogPostDetailLayout({
     ],
   };
 
+  return <StructuredData data={[schema, breadcrumbs]} />;
+}
+
+export default function BlogPostDetailLayout({ children, params }: Props) {
   return (
     <>
-      <StructuredData data={[schema, breadcrumbs]} />
+      <DynamicMarker />
+      <Suspense>
+        <PostStructuredData params={params} />
+      </Suspense>
       {children}
     </>
   );
