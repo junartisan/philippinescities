@@ -23,13 +23,31 @@ from app.oauth import (
     resolve_oauth_user,
     safe_next_path,
 )
-from app.schemas import OAuthExchangeRequest, OAuthProviders, Token, UserOut, UserRegister, UserUpdate
-from app.security import create_access_token, hash_password, verify_password
+from app.email import send_verification_email
+from app.models import utcnow
+from app.schemas import (
+    EmailVerificationRequest,
+    OAuthExchangeRequest,
+    OAuthProviders,
+    RegisterResponse,
+    ResendVerificationRequest,
+    Token,
+    UserOut,
+    UserRegister,
+    UserUpdate,
+)
+from app.security import (
+    create_access_token,
+    create_email_verification_token,
+    decode_email_verification_token,
+    hash_password,
+    verify_password,
+)
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-@router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
 def register(payload: UserRegister, db: Session = Depends(get_db)):
     email = payload.email.strip().lower()
     if db.scalar(select(User.id).where(User.email == email)) is not None:
@@ -44,7 +62,31 @@ def register(payload: UserRegister, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
-    return user
+
+    token = create_email_verification_token(user.id)
+    try:
+        sent = send_verification_email(user.email, user.full_name, token)
+    except Exception:
+        db.delete(user)
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to send confirmation email. Please try again later.",
+        )
+
+    if not sent and settings.environment != "production":
+        user.email_verified_at = utcnow()
+        db.add(user)
+        db.commit()
+
+    return RegisterResponse(
+        message=(
+            "Account created. You can now log in."
+            if user.email_verified_at is not None
+            else "Account created. Please check your email to confirm your account."
+        ),
+        email=user.email,
+    )
 
 
 @router.post("/login", response_model=Token)
@@ -61,7 +103,42 @@ def login(
         )
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user account")
+    if user.email_verified_at is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Please confirm your email address before logging in.",
+        )
     return Token(access_token=create_access_token(str(user.id)))
+
+
+@router.post("/verify-email")
+def verify_email(payload: EmailVerificationRequest, db: Session = Depends(get_db)):
+    user_id = decode_email_verification_token(payload.token)
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    if user.email_verified_at is None:
+        user.email_verified_at = utcnow()
+        db.add(user)
+        db.commit()
+    return {"message": "Email confirmed. You can now log in."}
+
+
+@router.post("/resend-verification")
+def resend_verification(payload: ResendVerificationRequest, db: Session = Depends(get_db)):
+    email = payload.email.strip().lower()
+    user = db.scalar(select(User).where(User.email == email))
+    if user is None or user.email_verified_at is not None or not user.is_active:
+        return {"message": "If an unconfirmed account exists, a confirmation email has been sent."}
+    token = create_email_verification_token(user.id)
+    try:
+        send_verification_email(user.email, user.full_name, token)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to send confirmation email. Please try again later.",
+        )
+    return {"message": "If an unconfirmed account exists, a confirmation email has been sent."}
 
 
 def _frontend_redirect(**params: str) -> RedirectResponse:

@@ -155,6 +155,7 @@ class User(TimestampMixin, Base):
         enum_column(UserRole), default=UserRole.user, nullable=False
     )
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     owned_businesses: Mapped[list[Business]] = relationship(
         "Business",

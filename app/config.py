@@ -27,6 +27,15 @@ class Settings(BaseSettings):
     facebook_app_secret: str | None = None
     facebook_graph_version: str = "v23.0"
 
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+    smtp_from_email: str | None = None
+    smtp_from_name: str = "Philippines Cities"
+    smtp_use_tls: bool = True
+    email_verification_expire_minutes: int = 60 * 24
+
     stripe_secret_key: str | None = None
     stripe_webhook_secret: str | None = None
     stripe_price_id: str | None = None

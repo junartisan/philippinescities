@@ -28,6 +28,7 @@ export function RegisterForm() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -37,6 +38,7 @@ export function RegisterForm() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
+    setSuccess("");
     if (password.length < 8) {
       setError("Password must be at least 8 characters.");
       return;
@@ -47,15 +49,18 @@ export function RegisterForm() {
     }
     setSubmitting(true);
     try {
-      await register({
+      const result = await register({
         full_name: fullName.trim(),
         email: email.trim(),
         phone: phone.trim() || undefined,
         password,
       });
-      router.push(next);
+      setSuccess(result.message);
+      setPassword("");
+      setConfirm("");
     } catch (err) {
       setError(errorMessage(err));
+    } finally {
       setSubmitting(false);
     }
   }
@@ -78,6 +83,7 @@ export function RegisterForm() {
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error ? <Alert>{error}</Alert> : null}
+        {success ? <Alert tone="success">{success}</Alert> : null}
         <Field label="Full name" htmlFor="full_name">
           <input
             id="full_name"

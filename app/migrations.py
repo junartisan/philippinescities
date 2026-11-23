@@ -22,6 +22,10 @@ def ensure_schema(engine: Engine) -> None:
             connection.exec_driver_sql(
                 "ALTER TABLE users ADD COLUMN stripe_customer_id VARCHAR(255)"
             )
+        if "email_verified_at" not in existing:
+            connection.exec_driver_sql(
+                f"ALTER TABLE users ADD COLUMN email_verified_at {timestamp_type}"
+            )
         connection.exec_driver_sql(
             "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_google_id ON users (google_id)"
         )
@@ -31,6 +35,10 @@ def ensure_schema(engine: Engine) -> None:
         connection.exec_driver_sql(
             "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_stripe_customer_id "
             "ON users (stripe_customer_id)"
+        )
+        connection.exec_driver_sql(
+            "UPDATE users SET email_verified_at = COALESCE(email_verified_at, created_at) "
+            "WHERE email_verified_at IS NULL"
         )
 
     if "businesses" in inspector.get_table_names():

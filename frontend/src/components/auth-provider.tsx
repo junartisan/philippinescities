@@ -24,12 +24,17 @@ interface RegisterInput {
   phone?: string;
 }
 
+interface RegisterResponse {
+  message: string;
+  email: string;
+}
+
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   oauthLogin: (code: string) => Promise<void>;
-  register: (input: RegisterInput) => Promise<void>;
+  register: (input: RegisterInput) => Promise<RegisterResponse>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   updateUser: (user: User) => void;
@@ -59,7 +64,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    void refreshUser();
+    const timer = window.setTimeout(() => {
+      void refreshUser();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [refreshUser]);
 
   useEffect(() => {
@@ -95,17 +103,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, []);
 
-  const register = useCallback(
-    async (input: RegisterInput) => {
-      await api("/api/auth/register", {
-        method: "POST",
-        body: input,
-        auth: false,
-      });
-      await login(input.email, input.password);
-    },
-    [login],
-  );
+  const register = useCallback(async (input: RegisterInput) => {
+    return api<RegisterResponse>("/api/auth/register", {
+      method: "POST",
+      body: input,
+      auth: false,
+    });
+  }, []);
 
   const logout = useCallback(() => {
     clearToken();

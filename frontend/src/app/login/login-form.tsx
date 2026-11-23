@@ -61,7 +61,21 @@ export function LoginForm() {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        {error ? <Alert>{error}</Alert> : null}
+        {error ? (
+          <Alert>
+            <div className="space-y-1">
+              <p>{error}</p>
+              {error.toLowerCase().includes("confirm your email") ? (
+                <Link
+                  href={`/resend-verification?email=${encodeURIComponent(email.trim())}`}
+                  className="font-semibold text-emerald-700 hover:text-emerald-800"
+                >
+                  Resend confirmation email
+                </Link>
+              ) : null}
+            </div>
+          </Alert>
+        ) : null}
         <Field label="Email address" htmlFor="email">
           <input
             id="email"

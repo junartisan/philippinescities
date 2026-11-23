@@ -68,6 +68,19 @@ class Token(BaseModel):
     token_type: str = "bearer"
 
 
+class RegisterResponse(BaseModel):
+    message: str
+    email: EmailStr
+
+
+class EmailVerificationRequest(BaseModel):
+    token: str = Field(min_length=16, max_length=4096)
+
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
+
 class CategoryCreate(BaseModel):
     name: str = Field(min_length=2, max_length=100)
     description: str | None = Field(default=None, max_length=500)

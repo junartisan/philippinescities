@@ -6,7 +6,7 @@ from datetime import timedelta
 
 from app.config import settings
 from app.database import SessionLocal
-from app.models import Business, utcnow
+from app.models import Business, User, utcnow
 
 
 def login(client, email, password):
@@ -24,7 +24,14 @@ def register(client, email, full_name):
         json={"email": email, "password": "password123", "full_name": full_name},
     )
     assert response.status_code == 201, response.text
-    return response.json()
+    with SessionLocal() as db:
+        user = db.query(User).filter(User.email == email).first()
+        assert user is not None
+        user.email_verified_at = utcnow()
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        return {"id": user.id, "email": user.email, "full_name": user.full_name}
 
 
 def test_slug_lookup_endpoints(client):

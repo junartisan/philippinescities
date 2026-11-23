@@ -12,7 +12,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.models import User, UserRole
+from app.models import User, UserRole, utcnow
 from app.security import hash_password
 
 GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
@@ -284,6 +284,7 @@ def resolve_oauth_user(db: Session, provider: str, profile: OAuthProfile) -> Use
             full_name=profile.full_name,
             avatar_url=profile.avatar_url,
             role=UserRole.user,
+            email_verified_at=utcnow(),
             **{id_field: profile.provider_id},
         )
         db.add(user)
@@ -295,6 +296,8 @@ def resolve_oauth_user(db: Session, provider: str, profile: OAuthProfile) -> Use
         raise OAuthFlowError("account_inactive")
     if not user.avatar_url and profile.avatar_url:
         user.avatar_url = profile.avatar_url
+    if user.email_verified_at is None:
+        user.email_verified_at = utcnow()
     db.add(user)
     db.commit()
     db.refresh(user)
