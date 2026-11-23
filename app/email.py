@@ -27,12 +27,18 @@ def send_email(to_email: str, subject: str, text_body: str, html_body: str | Non
     if html_body:
         msg.add_alternative(html_body, subtype="html")
 
-    with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=20) as smtp:
-        if settings.smtp_use_tls:
-            smtp.starttls()
-        if settings.smtp_username and settings.smtp_password:
-            smtp.login(settings.smtp_username, settings.smtp_password)
-        smtp.send_message(msg)
+    if settings.smtp_use_ssl or settings.smtp_port == 465:
+        with smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port, timeout=20) as smtp:
+            if settings.smtp_username and settings.smtp_password:
+                smtp.login(settings.smtp_username, settings.smtp_password)
+            smtp.send_message(msg)
+    else:
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=20) as smtp:
+            if settings.smtp_use_tls:
+                smtp.starttls()
+            if settings.smtp_username and settings.smtp_password:
+                smtp.login(settings.smtp_username, settings.smtp_password)
+            smtp.send_message(msg)
     return True
 
 

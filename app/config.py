@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     smtp_from_email: str | None = None
     smtp_from_name: str = "Philippines Cities"
     smtp_use_tls: bool = True
+    smtp_use_ssl: bool = False
     email_verification_expire_minutes: int = 60 * 24
 
     stripe_secret_key: str | None = None
