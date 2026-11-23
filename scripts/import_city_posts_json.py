@@ -114,7 +114,7 @@ def main() -> int:
     backend_url = args.backend_url.rstrip("/")
 
     Base.metadata.create_all(bind=engine)
-    ensure_schema()
+    ensure_schema(engine)
     with SessionLocal() as db:
         seed_directory(db)
 
