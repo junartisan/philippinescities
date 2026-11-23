@@ -79,3 +79,37 @@ def decode_email_verification_token(token: str) -> int:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired verification link",
         ) from exc
+
+
+def create_password_reset_token(user_id: int) -> str:
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(minutes=settings.password_reset_expire_minutes)
+    payload = {
+        "sub": str(user_id),
+        "iat": now,
+        "exp": expire,
+        "purpose": "password_reset",
+    }
+    return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
+
+
+def decode_password_reset_token(token: str) -> int:
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+    except jwt.PyJWTError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired password reset link",
+        ) from exc
+    if payload.get("purpose") != "password_reset":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired password reset link",
+        )
+    try:
+        return int(payload["sub"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired password reset link",
+        ) from exc

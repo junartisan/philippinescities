@@ -81,6 +81,15 @@ class ResendVerificationRequest(BaseModel):
     email: EmailStr
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(min_length=16, max_length=4096)
+    password: str = Field(min_length=8, max_length=128)
+
+
 class CategoryCreate(BaseModel):
     name: str = Field(min_length=2, max_length=100)
     description: str | None = Field(default=None, max_length=500)

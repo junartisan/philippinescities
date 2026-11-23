@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     smtp_use_tls: bool = True
     smtp_use_ssl: bool = False
     email_verification_expire_minutes: int = 60 * 24
+    password_reset_expire_minutes: int = 60
 
     stripe_secret_key: str | None = None
     stripe_webhook_secret: str | None = None

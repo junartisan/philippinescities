@@ -23,14 +23,16 @@ from app.oauth import (
     resolve_oauth_user,
     safe_next_path,
 )
-from app.email import send_verification_email
+from app.email import send_password_reset_email, send_verification_email
 from app.models import utcnow
 from app.schemas import (
     EmailVerificationRequest,
+    ForgotPasswordRequest,
     OAuthExchangeRequest,
     OAuthProviders,
     RegisterResponse,
     ResendVerificationRequest,
+    ResetPasswordRequest,
     Token,
     UserOut,
     UserRegister,
@@ -39,7 +41,9 @@ from app.schemas import (
 from app.security import (
     create_access_token,
     create_email_verification_token,
+    create_password_reset_token,
     decode_email_verification_token,
+    decode_password_reset_token,
     hash_password,
     verify_password,
 )
@@ -139,6 +143,38 @@ def resend_verification(payload: ResendVerificationRequest, db: Session = Depend
             detail="Unable to send confirmation email. Please try again later.",
         )
     return {"message": "If an unconfirmed account exists, a confirmation email has been sent."}
+
+
+@router.post("/forgot-password")
+def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    email = payload.email.strip().lower()
+    user = db.scalar(select(User).where(User.email == email))
+    generic = {"message": "If an account exists for that email, a password reset link has been sent."}
+    if user is None or not user.is_active:
+        return generic
+    token = create_password_reset_token(user.id)
+    try:
+        sent = send_password_reset_email(user.email, user.full_name, token)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to send password reset email. Please try again later.",
+        )
+    if not sent and settings.environment != "production":
+        return {"message": "SMTP is not configured. Password reset email was not sent in this environment."}
+    return generic
+
+
+@router.post("/reset-password")
+def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)):
+    user_id = decode_password_reset_token(payload.token)
+    user = db.get(User, user_id)
+    if user is None or not user.is_active:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired password reset link")
+    user.hashed_password = hash_password(payload.password)
+    db.add(user)
+    db.commit()
+    return {"message": "Password reset successful. You can now log in."}
 
 
 def _frontend_redirect(**params: str) -> RedirectResponse:

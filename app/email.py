@@ -69,3 +69,34 @@ def send_verification_email(to_email: str, full_name: str, token: str) -> bool:
     </div>
     """
     return send_email(to_email, subject, text_body, html_body)
+
+
+def send_password_reset_email(to_email: str, full_name: str, token: str) -> bool:
+    reset_url = f"{settings.frontend_url.rstrip('/')}/reset-password?token={token}"
+    subject = "Reset your Philippines Cities password"
+    greeting = full_name.strip() or "there"
+    text_body = (
+        f"Hi {greeting},\n\n"
+        "We received a request to reset your Philippines Cities password. "
+        "Use the link below to choose a new password:\n"
+        f"{reset_url}\n\n"
+        f"This link expires in {settings.password_reset_expire_minutes} minutes.\n"
+        "If you did not request a password reset, you can ignore this email.\n"
+    )
+    html_body = f"""
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a">
+      <h2 style="margin-bottom:8px">Reset your password</h2>
+      <p>Hi {greeting},</p>
+      <p>We received a request to reset your Philippines Cities password.</p>
+      <p>
+        <a href="{reset_url}" style="display:inline-block;padding:10px 16px;background:#059669;color:#fff;text-decoration:none;border-radius:999px">
+          Reset password
+        </a>
+      </p>
+      <p>If the button does not work, copy this link into your browser:</p>
+      <p><a href="{reset_url}">{reset_url}</a></p>
+      <p>This link expires in {settings.password_reset_expire_minutes} minutes.</p>
+      <p>If you did not request this, you can ignore this email.</p>
+    </div>
+    """
+    return send_email(to_email, subject, text_body, html_body)

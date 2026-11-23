@@ -89,16 +89,26 @@ export function LoginForm() {
           />
         </Field>
         <Field label="Password" htmlFor="password">
-          <input
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            className={inputClass}
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder="Your password"
-            required
-          />
+          <div className="space-y-2">
+            <input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              className={inputClass}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Your password"
+              required
+            />
+            <div className="text-right">
+              <Link
+                href={`/forgot-password?email=${encodeURIComponent(email.trim())}`}
+                className="text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+              >
+                Forgot password?
+              </Link>
+            </div>
+          </div>
         </Field>
         <button
           type="submit"

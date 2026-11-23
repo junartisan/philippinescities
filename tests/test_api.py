@@ -1953,3 +1953,39 @@ def test_account_billing_summary(client):
     assert other_account.json()["pending_payments"] == 0
 
     assert client.get("/api/billing/account").status_code == 401
+
+
+def test_forgot_and_reset_password(client, monkeypatch):
+    from app.routers import auth as auth_router
+
+    sent = {}
+
+    def fake_send(to_email, full_name, token):
+        sent["to_email"] = to_email
+        sent["full_name"] = full_name
+        sent["token"] = token
+        return True
+
+    monkeypatch.setattr(auth_router, "send_password_reset_email", fake_send)
+
+    register(client, "reset-me@example.com", "Reset Me")
+
+    # Unknown email should still return generic success
+    resp = client.post("/api/auth/forgot-password", json={"email": "nobody@example.com"})
+    assert resp.status_code == 200, resp.text
+
+    resp = client.post("/api/auth/forgot-password", json={"email": "reset-me@example.com"})
+    assert resp.status_code == 200, resp.text
+    assert "token" in sent
+
+    bad = client.post("/api/auth/reset-password", json={"token": "bad-token-value-123456", "password": "newpassword123"})
+    assert bad.status_code == 400
+
+    ok = client.post("/api/auth/reset-password", json={"token": sent["token"], "password": "newpassword123"})
+    assert ok.status_code == 200, ok.text
+
+    # old password fails, new works
+    old_login = client.post("/api/auth/login", data={"username": "reset-me@example.com", "password": "password123"})
+    assert old_login.status_code == 401
+    new_login = client.post("/api/auth/login", data={"username": "reset-me@example.com", "password": "newpassword123"})
+    assert new_login.status_code == 200, new_login.text
