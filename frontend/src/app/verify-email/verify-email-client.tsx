@@ -58,7 +58,7 @@ export function VerifyEmailClient() {
             <Spinner className="h-4 w-4" /> {message}
           </div>
         ) : (
-          <Alert tone={status === "success" ? "success" : "danger"}>{message}</Alert>
+          <Alert tone={status === "success" ? "success" : "error"}>{message}</Alert>
         )}
         {status !== "loading" ? (
           <Link href="/login" className={buttonClass("primary", "md", "w-full")}>
