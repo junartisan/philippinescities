@@ -32,6 +32,7 @@ import {
   textareaClass,
 } from "@/components/ui";
 import { CoverImageInput } from "@/components/cover-image-input";
+import { RichTextEditor } from "@/components/rich-text-editor";
 import {
   ARTICLE_TYPE_LABELS,
   ARTICLE_TYPE_OPTIONS,
@@ -662,20 +663,12 @@ export function ArticleManager() {
                   />
                 </Field>
 
-                <Field label="Update details" htmlFor="article-body">
-                  <textarea
-                    id="article-body"
-                    className={textareaClass}
+                <Field label="Update details">
+                  <RichTextEditor
                     value={form.body}
-                    onChange={(event) =>
-                      setForm((previous) => ({
-                        ...previous,
-                        body: event.target.value,
-                      }))
+                    onChange={(html) =>
+                      setForm((previous) => ({ ...previous, body: html }))
                     }
-                    required
-                    minLength={10}
-                    maxLength={20000}
                     placeholder="Describe the product, service, promo, or event."
                   />
                 </Field>
