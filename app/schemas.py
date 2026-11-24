@@ -261,7 +261,7 @@ class AdminReviewOut(ReviewOut):
 class ArticleCreate(BaseModel):
     title: str = Field(min_length=3, max_length=200)
     summary: str | None = Field(default=None, max_length=500)
-    body: str = Field(min_length=10, max_length=20000)
+    body: str = Field(min_length=10, max_length=200000)
     cover_image_url: str | None = Field(default=None, max_length=500)
     article_type: ArticleType = ArticleType.other
     event_starts_at: datetime | None = None
@@ -272,7 +272,7 @@ class ArticleCreate(BaseModel):
 class ArticleUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=3, max_length=200)
     summary: str | None = Field(default=None, max_length=500)
-    body: str | None = Field(default=None, min_length=10, max_length=20000)
+    body: str | None = Field(default=None, min_length=10, max_length=200000)
     cover_image_url: str | None = Field(default=None, max_length=500)
     article_type: ArticleType | None = None
     event_starts_at: datetime | None = None
@@ -331,7 +331,7 @@ class CityPostCreate(BaseModel):
     blog_category_id: int | None = None
     title: str = Field(min_length=3, max_length=200)
     summary: str | None = Field(default=None, max_length=500)
-    body: str = Field(min_length=10, max_length=20000)
+    body: str = Field(min_length=10, max_length=200000)
     cover_image_url: str | None = Field(default=None, max_length=500)
     post_type: CityPostType = CityPostType.article
     event_starts_at: datetime | None = None
@@ -344,7 +344,7 @@ class CityPostUpdate(BaseModel):
     blog_category_id: int | None = None
     title: str | None = Field(default=None, min_length=3, max_length=200)
     summary: str | None = Field(default=None, max_length=500)
-    body: str | None = Field(default=None, min_length=10, max_length=20000)
+    body: str | None = Field(default=None, min_length=10, max_length=200000)
     cover_image_url: str | None = Field(default=None, max_length=500)
     post_type: CityPostType | None = None
     event_starts_at: datetime | None = None
@@ -513,11 +513,11 @@ class BlogContributorStatusOut(BaseModel):
 
 
 class ContributorPostCreate(BaseModel):
-    city_id: int
+    city_id: int | None = None
     blog_category_id: int | None = None
     title: str = Field(min_length=3, max_length=200)
     summary: str | None = Field(default=None, max_length=500)
-    body: str = Field(min_length=10, max_length=20000)
+    body: str = Field(min_length=10, max_length=200000)
     cover_image_url: str | None = Field(default=None, max_length=500)
     post_type: CityPostType = CityPostType.article
     event_starts_at: datetime | None = None
@@ -530,7 +530,7 @@ class ContributorPostUpdate(BaseModel):
     blog_category_id: int | None = None
     title: str | None = Field(default=None, min_length=3, max_length=200)
     summary: str | None = Field(default=None, max_length=500)
-    body: str | None = Field(default=None, min_length=10, max_length=20000)
+    body: str | None = Field(default=None, min_length=10, max_length=200000)
     cover_image_url: str | None = Field(default=None, max_length=500)
     post_type: CityPostType | None = None
     event_starts_at: datetime | None = None
