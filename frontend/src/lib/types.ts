@@ -1,4 +1,4 @@
-export type Role = "user" | "owner" | "editor" | "supervisor" | "admin";
+export type Role = "user" | "owner" | "contributor" | "editor" | "supervisor" | "admin";
 export type BusinessStatus = "pending" | "approved" | "rejected";
 export type ArticleAccessOverride = "approved" | "rejected";
 export type ClaimStatus = "pending" | "approved" | "rejected";

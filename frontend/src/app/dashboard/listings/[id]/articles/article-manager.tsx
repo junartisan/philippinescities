@@ -130,6 +130,15 @@ export function ArticleManager() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    const editId = Number(searchParams.get("edit"));
+    if (!Number.isFinite(editId) || !articles) return;
+    const article = articles.items.find((item) => item.id === editId);
+    if (article && editing?.id !== article.id) {
+      beginEdit(article);
+    }
+  }, [articles, editing?.id, searchParams]);
+
   function resetForm() {
     setForm(EMPTY_FORM);
     setEditing(null);

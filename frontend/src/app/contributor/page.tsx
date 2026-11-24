@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import {
   CalendarDays,
@@ -46,6 +47,7 @@ import type {
 } from "@/lib/types";
 
 function ContributorContent() {
+  const searchParams = useSearchParams();
   const [status, setStatus] = useState<ContributorStatus | null>(null);
   const [posts, setPosts] = useState<CityPostList | null>(null);
   const [cities, setCities] = useState<City[]>([]);
@@ -99,6 +101,15 @@ function ContributorContent() {
       void loadPosts();
     }
   }, [status?.status, loadPosts]);
+
+  useEffect(() => {
+    const editId = Number(searchParams.get("edit"));
+    if (!Number.isFinite(editId) || !posts) return;
+    const post = posts.items.find((item) => item.id === editId);
+    if (post && editing?.id !== post.id) {
+      openEdit(post);
+    }
+  }, [editing?.id, posts, searchParams]);
 
   function toggleCity(cityId: number) {
     setSelectedCityIds((previous) =>

@@ -9,9 +9,11 @@ import {
   Clock3,
   MapPin,
   Newspaper,
+  Pencil,
 } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { AdSlot } from "@/components/adsense";
+import { useAuth } from "@/components/auth-provider";
 import { CityPostComments } from "@/components/city-post-comments";
 import { RecentPosts } from "@/components/recent-posts";
 import { ShareButtons } from "@/components/share-buttons";
@@ -31,6 +33,7 @@ import type { CityPost } from "@/lib/types";
 export default function CityPostDetailPage() {
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
+  const { user } = useAuth();
   const [post, setPost] = useState<CityPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -78,15 +81,33 @@ export default function CityPostDetailPage() {
     );
   }
 
+  const canEdit =
+    user?.role === "admin" ||
+    user?.role === "editor" ||
+    user?.role === "supervisor" ||
+    (user?.role === "contributor" && post.author?.id === user.id);
+  const editHref =
+    user?.role === "contributor"
+      ? `/contributor?edit=${post.id}`
+      : `/admin/blog?edit=${post.id}`;
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <Link
-        href="/blog"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition hover:text-emerald-700"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        All city posts
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link
+          href="/blog"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition hover:text-emerald-700"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          All city posts
+        </Link>
+        {canEdit ? (
+          <Link href={editHref} className={buttonClass("secondary", "sm")}>
+            <Pencil className="h-4 w-4" />
+            Edit post
+          </Link>
+        ) : null}
+      </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <article className="lg:col-span-2">

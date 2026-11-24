@@ -9,10 +9,12 @@ import {
   Clock3,
   MapPin,
   Newspaper,
+  Pencil,
   UserRound,
 } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { AdSlot } from "@/components/adsense";
+import { useAuth } from "@/components/auth-provider";
 import { ShareButtons } from "@/components/share-buttons";
 import {
   Alert,
@@ -30,6 +32,7 @@ import type { Article } from "@/lib/types";
 export default function ArticleDetailPage() {
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
+  const { user } = useAuth();
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -78,15 +81,30 @@ export default function ArticleDetailPage() {
     );
   }
 
+  const canEdit =
+    user?.role === "admin" ||
+    user?.role === "editor" ||
+    user?.role === "supervisor" ||
+    article.author?.id === user?.id;
+  const editHref = `/dashboard/listings/${article.business_id}/articles?edit=${article.id}`;
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <Link
-        href="/articles"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition hover:text-emerald-700"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        All business updates
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link
+          href="/articles"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition hover:text-emerald-700"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          All business updates
+        </Link>
+        {canEdit ? (
+          <Link href={editHref} className={buttonClass("secondary", "sm")}>
+            <Pencil className="h-4 w-4" />
+            Edit update
+          </Link>
+        ) : null}
+      </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <article className="lg:col-span-2">
