@@ -51,7 +51,7 @@ export async function generateMetadata({ params }: MetadataProps): Promise<Metad
     publishedTime: post.published_at,
     modifiedTime: post.updated_at,
     section: post.blog_category?.name,
-    tags: [post.city.name, post.blog_category?.name, "city blog"].filter(
+    tags: [post.city?.name, post.blog_category?.name, "Philippines", "city blog"].filter(
       (tag): tag is string => Boolean(tag),
     ),
   });
@@ -82,7 +82,7 @@ async function PostStructuredData({ params }: MetadataProps) {
       url: absoluteUrl("/"),
     },
     articleSection: post.blog_category?.name || undefined,
-    keywords: [post.city.name, post.blog_category?.name, "city blog"]
+    keywords: [post.city?.name, post.blog_category?.name, "Philippines", "city blog"]
       .filter(Boolean)
       .join(", "),
     abstract: post.summary ? plainText(post.summary) : undefined,

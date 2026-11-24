@@ -271,7 +271,7 @@ def create_my_post(
     db: Session = Depends(get_db),
 ):
     profile = _require_contributor(db, user)
-    if db.get(City, payload.city_id) is None:
+    if payload.city_id is not None and db.get(City, payload.city_id) is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid city_id")
     if (
         payload.blog_category_id is not None
@@ -281,7 +281,8 @@ def create_my_post(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid blog_category_id",
         )
-    _ensure_city_access(profile, payload.city_id)
+    if payload.city_id is not None:
+        _ensure_city_access(profile, payload.city_id)
     title = payload.title.strip()
     body = sanitize_post_body(payload.body.strip())
     if len(title) < 3:
@@ -347,7 +348,7 @@ def update_my_post(
     data = payload.model_dump(exclude_unset=True)
     submit_for_review = data.pop("submit_for_review", None)
     if "city_id" in data:
-        if data["city_id"] is None or db.get(City, data["city_id"]) is None:
+        if data["city_id"] is not None and db.get(City, data["city_id"]) is None:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid city_id")
     if (
         data.get("blog_category_id") is not None
@@ -357,7 +358,9 @@ def update_my_post(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid blog_category_id",
         )
-    _ensure_city_access(profile, data.get("city_id", post.city_id))
+    target_city_id = data.get("city_id", post.city_id)
+    if target_city_id is not None:
+        _ensure_city_access(profile, target_city_id)
     if "title" in data:
         if data["title"] is None:
             raise HTTPException(

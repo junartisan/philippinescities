@@ -327,7 +327,7 @@ class BlogCategoryOut(ORMModel):
 
 
 class CityPostCreate(BaseModel):
-    city_id: int
+    city_id: int | None = None
     blog_category_id: int | None = None
     title: str = Field(min_length=3, max_length=200)
     summary: str | None = Field(default=None, max_length=500)
@@ -340,7 +340,7 @@ class CityPostCreate(BaseModel):
 
 
 class CityPostUpdate(BaseModel):
-    city_id: int | None = None
+    city_id: int | None = Field(default=None)
     blog_category_id: int | None = None
     title: str | None = Field(default=None, min_length=3, max_length=200)
     summary: str | None = Field(default=None, max_length=500)
@@ -354,7 +354,7 @@ class CityPostUpdate(BaseModel):
 
 class CityPostOut(ORMModel):
     id: int
-    city_id: int
+    city_id: int | None
     blog_category_id: int | None
     title: str
     slug: str
@@ -369,7 +369,7 @@ class CityPostOut(ORMModel):
     review_status: CityPostReviewStatus
     review_notes: str | None
     reviewed_at: datetime | None
-    city: CityOut
+    city: CityOut | None
     blog_category: BlogCategoryOut | None
     author: UserPublic | None
     reviewed_by: UserPublic | None
@@ -392,7 +392,7 @@ class CityPostList(BaseModel):
 
 class CityPostPublicOut(ORMModel):
     id: int
-    city_id: int
+    city_id: int | None
     blog_category_id: int | None
     title: str
     slug: str
@@ -405,7 +405,7 @@ class CityPostPublicOut(ORMModel):
     is_published: bool
     published_at: datetime
     review_status: CityPostReviewStatus
-    city: CityOut
+    city: CityOut | None
     blog_category: BlogCategoryOut | None
     author: UserPublic | None
     created_at: datetime

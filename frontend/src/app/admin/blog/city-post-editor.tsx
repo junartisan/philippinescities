@@ -50,9 +50,9 @@ function toIso(value: string): string | null {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
-function initialForm(post: CityPost | null, cities: City[]): FormState {
+function initialForm(post: CityPost | null): FormState {
   return {
-    city_id: String(post?.city_id ?? cities[0]?.id ?? ""),
+    city_id: post?.city_id ? String(post.city_id) : "",
     blog_category_id: String(post?.blog_category_id ?? ""),
     title: post?.title ?? "",
     summary: post?.summary ?? "",
@@ -78,7 +78,7 @@ export function CityPostEditor({
   onSaved: (post: CityPost) => void;
   onCancel: () => void;
 }) {
-  const [form, setForm] = useState<FormState>(() => initialForm(post, cities));
+  const [form, setForm] = useState<FormState>(() => initialForm(post));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const canPublish = !post || post.review_status === "approved";
@@ -89,10 +89,6 @@ export function CityPostEditor({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!form.city_id) {
-      setError("Choose a city for this post.");
-      return;
-    }
     if (form.post_type === "event" && !form.event_starts_at) {
       setError("Events need a start date and time.");
       return;
@@ -100,7 +96,7 @@ export function CityPostEditor({
     setSaving(true);
     setError("");
     const payload: CityPostPayload = {
-      city_id: Number(form.city_id),
+      city_id: form.city_id ? Number(form.city_id) : null,
       blog_category_id: form.blog_category_id
         ? Number(form.blog_category_id)
         : null,
@@ -164,15 +160,18 @@ export function CityPostEditor({
       ) : null}
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
-        <Field label="City" htmlFor="city-post-city">
+        <Field
+          label="City"
+          htmlFor="city-post-city"
+          hint="Leave as All Philippines for a general article."
+        >
           <select
             id="city-post-city"
             className={selectClass}
             value={form.city_id}
             onChange={(event) => update("city_id", event.target.value)}
-            required
           >
-            <option value="">Choose a city</option>
+            <option value="">All Philippines</option>
             {cities.map((city) => (
               <option key={city.id} value={city.id}>
                 {city.name}

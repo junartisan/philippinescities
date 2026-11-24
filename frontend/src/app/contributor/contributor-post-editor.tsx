@@ -51,9 +51,10 @@ function toIso(value: string): string | null {
 
 function initialForm(post: CityPost | null, cities: City[]): FormState {
   const postCityAllowed =
-    post !== null && cities.some((city) => city.id === post.city_id);
+    post !== null &&
+    (post.city_id === null || cities.some((city) => city.id === post.city_id));
   return {
-    city_id: String(postCityAllowed ? post.city_id : cities[0]?.id ?? ""),
+    city_id: postCityAllowed && post?.city_id ? String(post.city_id) : "",
     blog_category_id: String(post?.blog_category_id ?? ""),
     title: post?.title ?? "",
     summary: post?.summary ?? "",
@@ -87,10 +88,6 @@ export function ContributorPostEditor({
   }
 
   async function save(submitForReview: boolean) {
-    if (!form.city_id) {
-      setError("Choose a city for this post.");
-      return;
-    }
     if (form.post_type === "event" && !form.event_starts_at) {
       setError("Events need a start date and time.");
       return;
@@ -98,7 +95,7 @@ export function ContributorPostEditor({
     setSaving(submitForReview ? "submit" : "draft");
     setError("");
     const payload: ContributorPostPayload = {
-      city_id: Number(form.city_id),
+      city_id: form.city_id ? Number(form.city_id) : null,
       blog_category_id: form.blog_category_id
         ? Number(form.blog_category_id)
         : null,
@@ -173,16 +170,15 @@ export function ContributorPostEditor({
         <Field
           label="City"
           htmlFor="contributor-city"
-          hint="Only cities assigned by an admin are available."
+          hint="Choose an assigned city, or leave as All Philippines for a general article."
         >
           <select
             id="contributor-city"
             className={selectClass}
             value={form.city_id}
             onChange={(event) => update("city_id", event.target.value)}
-            required
           >
-            <option value="">Choose a city</option>
+            <option value="">All Philippines</option>
             {cities.map((city) => (
               <option key={city.id} value={city.id}>
                 {city.name}

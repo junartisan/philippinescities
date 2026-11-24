@@ -431,8 +431,8 @@ class CityPost(TimestampMixin, Base):
     __tablename__ = "city_posts"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    city_id: Mapped[int] = mapped_column(
-        ForeignKey("cities.id", ondelete="CASCADE"), index=True, nullable=False
+    city_id: Mapped[int | None] = mapped_column(
+        ForeignKey("cities.id", ondelete="CASCADE"), index=True
     )
     blog_category_id: Mapped[int | None] = mapped_column(
         ForeignKey("blog_categories.id", ondelete="SET NULL"), index=True
@@ -468,7 +468,7 @@ class CityPost(TimestampMixin, Base):
     )
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
-    city: Mapped[City] = relationship(back_populates="city_posts")
+    city: Mapped[City | None] = relationship(back_populates="city_posts")
     blog_category: Mapped[BlogCategory | None] = relationship(
         back_populates="city_posts"
     )

@@ -200,7 +200,7 @@ export interface ArticlePayload {
 
 export interface CityPost {
   id: number;
-  city_id: number;
+  city_id: number | null;
   blog_category_id: number | null;
   title: string;
   slug: string;
@@ -215,7 +215,7 @@ export interface CityPost {
   review_status: CityPostReviewStatus;
   review_notes: string | null;
   reviewed_at: string | null;
-  city: City;
+  city: City | null;
   blog_category: BlogCategory | null;
   author: UserPublic | null;
   reviewed_by: UserPublic | null;
@@ -241,7 +241,7 @@ export interface CityPostComment {
 }
 
 export interface CityPostPayload {
-  city_id: number;
+  city_id: number | null;
   blog_category_id: number | null;
   title: string;
   summary: string | null;
@@ -289,7 +289,7 @@ export interface ContributorStatus {
 }
 
 export interface ContributorPostPayload {
-  city_id: number;
+  city_id: number | null;
   blog_category_id: number | null;
   title: string;
   summary: string | null;

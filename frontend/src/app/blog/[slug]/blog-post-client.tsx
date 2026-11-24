@@ -149,8 +149,14 @@ export default function CityPostDetailPage() {
                 </p>
                 <p className="mt-1 flex items-center gap-1.5 text-xs text-violet-700">
                   <MapPin className="h-3.5 w-3.5" />
-                  {post.city.name}
-                  {post.city.province ? `, ${post.city.province}` : ""}
+                  {post.city ? (
+                    <>
+                      {post.city.name}
+                      {post.city.province ? `, ${post.city.province}` : ""}
+                    </>
+                  ) : (
+                    "All Philippines"
+                  )}
                 </p>
               </div>
             ) : null}
@@ -178,7 +184,7 @@ export default function CityPostDetailPage() {
             <div className="mt-8 flex items-center gap-3 border-t border-stone-100 pt-5">
               <Avatar
                 name={post.author?.full_name ?? "Philippines Cities"}
-                seed={post.author?.id ?? post.city.id}
+                seed={post.author?.id ?? post.city?.id ?? post.id}
                 size="sm"
               />
               <div>
@@ -197,26 +203,46 @@ export default function CityPostDetailPage() {
 
         <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
           <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-            <h2 className="text-sm font-semibold text-slate-900">City</h2>
-            <Link
-              href={`/cities/${post.city.slug}`}
-              className="mt-3 flex items-center gap-1.5 text-sm font-medium text-slate-800 hover:text-emerald-700"
-            >
-              <MapPin className="h-4 w-4 text-emerald-600" />
-              {post.city.name}
-              {post.city.province ? `, ${post.city.province}` : ""}
-            </Link>
-            {post.city.region ? (
-              <p className="mt-1 text-xs text-slate-500">{post.city.region}</p>
-            ) : null}
+            <h2 className="text-sm font-semibold text-slate-900">
+              {post.city ? "City" : "Coverage"}
+            </h2>
+            {post.city ? (
+              <>
+                <Link
+                  href={`/cities/${post.city.slug}`}
+                  className="mt-3 flex items-center gap-1.5 text-sm font-medium text-slate-800 hover:text-emerald-700"
+                >
+                  <MapPin className="h-4 w-4 text-emerald-600" />
+                  {post.city.name}
+                  {post.city.province ? `, ${post.city.province}` : ""}
+                </Link>
+                {post.city.region ? (
+                  <p className="mt-1 text-xs text-slate-500">{post.city.region}</p>
+                ) : null}
+              </>
+            ) : (
+              <p className="mt-3 text-sm font-medium text-slate-800">
+                All Philippines
+              </p>
+            )}
             <div className="mt-4 flex flex-col gap-2">
-              <Link
-                href={`/cities/${post.city.slug}#news`}
-                className={buttonClass("secondary", "sm", "w-full")}
-              >
-                <Newspaper className="h-4 w-4" />
-                More from {post.city.name}
-              </Link>
+              {post.city ? (
+                <Link
+                  href={`/cities/${post.city.slug}#news`}
+                  className={buttonClass("secondary", "sm", "w-full")}
+                >
+                  <Newspaper className="h-4 w-4" />
+                  More from {post.city.name}
+                </Link>
+              ) : (
+                <Link
+                  href="/blog"
+                  className={buttonClass("secondary", "sm", "w-full")}
+                >
+                  <Newspaper className="h-4 w-4" />
+                  More city blog posts
+                </Link>
+              )}
               {post.blog_category ? (
                 <Link
                   href={`/blog/categories/${post.blog_category.slug}`}
@@ -226,12 +252,21 @@ export default function CityPostDetailPage() {
                   More in {post.blog_category.name}
                 </Link>
               ) : null}
-              <Link
-                href={`/cities/${post.city.slug}#businesses`}
-                className={buttonClass("ghost", "sm", "w-full")}
-              >
-                Browse local businesses
-              </Link>
+              {post.city ? (
+                <Link
+                  href={`/cities/${post.city.slug}#businesses`}
+                  className={buttonClass("ghost", "sm", "w-full")}
+                >
+                  Browse local businesses
+                </Link>
+              ) : (
+                <Link
+                  href="/businesses"
+                  className={buttonClass("ghost", "sm", "w-full")}
+                >
+                  Browse businesses
+                </Link>
+              )}
             </div>
           </div>
 

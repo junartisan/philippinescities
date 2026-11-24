@@ -466,8 +466,14 @@ export default function AdminBlogPage() {
                       {post.is_published ? "Public" : "Hidden"}
                     </Badge>
                     <span className="text-xs text-slate-400">
-                      {post.city.name}
-                      {post.city.province ? `, ${post.city.province}` : ""}
+                      {post.city ? (
+                        <>
+                          {post.city.name}
+                          {post.city.province ? `, ${post.city.province}` : ""}
+                        </>
+                      ) : (
+                        "All Philippines"
+                      )}
                     </span>
                   </div>
                   <h3 className="mt-2 text-lg font-semibold tracking-tight text-slate-900">

@@ -63,8 +63,14 @@ export function CityPostCard({ post }: { post: CityPost }) {
         <div className="mt-4 flex items-center justify-between gap-2 border-t border-stone-100 pt-4">
           <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600">
             <MapPin className="h-3.5 w-3.5 text-emerald-600" />
-            {post.city.name}
-            {post.city.province ? `, ${post.city.province}` : ""}
+            {post.city ? (
+              <>
+                {post.city.name}
+                {post.city.province ? `, ${post.city.province}` : ""}
+              </>
+            ) : (
+              "All Philippines"
+            )}
           </span>
           {post.author ? (
             <span className="inline-flex items-center gap-1 text-xs text-slate-400">

@@ -509,8 +509,14 @@ function ContributorContent() {
                           {CITY_POST_REVIEW_LABELS[post.review_status]}
                         </Badge>
                         <span className="text-xs text-slate-400">
-                          {post.city.name}
-                          {post.city.province ? `, ${post.city.province}` : ""}
+                          {post.city ? (
+                            <>
+                              {post.city.name}
+                              {post.city.province ? `, ${post.city.province}` : ""}
+                            </>
+                          ) : (
+                            "All Philippines"
+                          )}
                         </span>
                       </div>
                       <h2 className="mt-2 text-lg font-semibold tracking-tight text-slate-900">

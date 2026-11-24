@@ -831,7 +831,7 @@ def create_city_post(
     admin: User = Depends(get_current_editor),
     db: Session = Depends(get_db),
 ):
-    if db.get(City, payload.city_id) is None:
+    if payload.city_id is not None and db.get(City, payload.city_id) is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid city_id")
     if (
         payload.blog_category_id is not None
@@ -892,7 +892,7 @@ def update_city_post(
 
     data = payload.model_dump(exclude_unset=True)
     if "city_id" in data:
-        if data["city_id"] is None or db.get(City, data["city_id"]) is None:
+        if data["city_id"] is not None and db.get(City, data["city_id"]) is None:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid city_id")
     if (
         data.get("blog_category_id") is not None

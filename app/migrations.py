@@ -90,11 +90,20 @@ def ensure_schema(engine: Engine) -> None:
 
     if "city_posts" in inspector.get_table_names():
         existing = {column["name"] for column in inspector.get_columns("city_posts")}
+        columns = {column["name"]: column for column in inspector.get_columns("city_posts")}
         with engine.begin() as connection:
             if "blog_category_id" not in existing:
                 connection.exec_driver_sql(
                     "ALTER TABLE city_posts ADD COLUMN blog_category_id INTEGER"
                 )
+            if columns.get("city_id", {}).get("nullable") is False:
+                if engine.dialect.name == "postgresql":
+                    connection.exec_driver_sql(
+                        "ALTER TABLE city_posts ALTER COLUMN city_id DROP NOT NULL"
+                    )
+                elif engine.dialect.name == "sqlite":
+                    # SQLite cannot alter column nullability in-place; app/schema handles this for fresh DBs.
+                    pass
             if "review_status" not in existing:
                 connection.exec_driver_sql(
                     "ALTER TABLE city_posts ADD COLUMN review_status VARCHAR(20) "
