@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   ArrowLeft,
   CalendarDays,
@@ -10,6 +10,7 @@ import {
   MapPin,
   Newspaper,
   Pencil,
+  Search,
 } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { AdSlot } from "@/components/adsense";
@@ -24,17 +25,21 @@ import {
   Badge,
   buttonClass,
   EmptyState,
+  inputClass,
   PageLoader,
 } from "@/components/ui";
 import { CITY_POST_TYPE_LABELS, cityPostTypeTone } from "@/lib/blog";
 import { formatDate, formatDateTime, isRichText } from "@/lib/utils";
-import type { CityPost } from "@/lib/types";
+import type { BlogCategory, CityPost } from "@/lib/types";
 
 export default function CityPostDetailPage() {
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
+  const router = useRouter();
   const { user } = useAuth();
   const [post, setPost] = useState<CityPost | null>(null);
+  const [categories, setCategories] = useState<BlogCategory[]>([]);
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -59,6 +64,26 @@ export default function CityPostDetailPage() {
       active = false;
     };
   }, [slug]);
+
+  useEffect(() => {
+    let active = true;
+    api<BlogCategory[]>("/api/blog-categories")
+      .then((data) => {
+        if (active) setCategories(data);
+      })
+      .catch(() => {
+        if (active) setCategories([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  function handleCategorySearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const q = search.trim();
+    router.push(q ? `/blog?search=${encodeURIComponent(q)}` : "/blog");
+  }
 
   if (loading) return <PageLoader label="Loading post…" />;
 
@@ -202,6 +227,50 @@ export default function CityPostDetailPage() {
         </article>
 
         <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+          <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-slate-900">Search blog</h2>
+            <form onSubmit={handleCategorySearch} className="mt-3">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  className={`${inputClass} pl-9`}
+                  placeholder="Search articles..."
+                  aria-label="Search blog articles"
+                />
+              </div>
+              <button type="submit" className={buttonClass("primary", "sm", "mt-2 w-full")}>
+                Search
+              </button>
+            </form>
+          </div>
+
+          <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-slate-900">Categories</h2>
+            <div className="mt-3 flex flex-col gap-1.5">
+              <Link
+                href="/blog"
+                className="rounded-lg px-2 py-1.5 text-sm text-slate-600 transition hover:bg-stone-50 hover:text-emerald-700"
+              >
+                All posts
+              </Link>
+              {categories.map((category) => (
+                <Link
+                  key={category.id}
+                  href={`/blog/categories/${category.slug}`}
+                  className={`rounded-lg px-2 py-1.5 text-sm transition hover:bg-stone-50 hover:text-emerald-700 ${
+                    post.blog_category?.id === category.id
+                      ? "bg-emerald-50 font-medium text-emerald-700"
+                      : "text-slate-600"
+                  }`}
+                >
+                  {category.name}
+                </Link>
+              ))}
+            </div>
+          </div>
+
           <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-semibold text-slate-900">
               {post.city ? "City" : "Coverage"}
