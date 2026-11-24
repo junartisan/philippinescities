@@ -11,9 +11,8 @@ import {
   buttonClass,
   EmptyState,
   inputClass,
-  Pagination,
   selectClass,
-  SkeletonCard,
+  Spinner,
 } from "@/components/ui";
 import { ARTICLE_TYPE_OPTIONS } from "@/lib/articles";
 import { cn } from "@/lib/utils";
@@ -26,7 +25,7 @@ interface Filters {
   page: number;
 }
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 6;
 
 export function ArticlesClient() {
   const searchParams = useSearchParams();
@@ -39,6 +38,7 @@ export function ArticlesClient() {
   const [searchInput, setSearchInput] = useState(filters.search);
   const [data, setData] = useState<ArticleList | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -49,19 +49,34 @@ export function ArticlesClient() {
     if (filters.businessId) params.set("business_id", filters.businessId);
     params.set("page", String(filters.page));
     params.set("page_size", String(PAGE_SIZE));
-    window.history.replaceState(null, "", `/articles?${params.toString()}`);
 
-    setLoading(true);
+    const isFirstPage = filters.page === 1;
+    window.history.replaceState(
+      null,
+      "",
+      `/articles${filters.page > 1 || filters.search || filters.type || filters.businessId ? `?${params.toString()}` : ""}`,
+    );
+
+    if (isFirstPage) setLoading(true);
+    else setLoadingMore(true);
     setError("");
+
     api<ArticleList>(`/api/articles?${params.toString()}`)
       .then((result) => {
-        if (active) setData(result);
+        if (!active) return;
+        setData((previous) =>
+          isFirstPage || !previous
+            ? result
+            : { ...result, items: [...previous.items, ...result.items] },
+        );
       })
       .catch((err) => {
         if (active) setError(errorMessage(err));
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (!active) return;
+        setLoading(false);
+        setLoadingMore(false);
       });
     return () => {
       active = false;
@@ -169,15 +184,26 @@ export function ArticlesClient() {
           </div>
         ) : null}
 
-        <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {loading
-            ? Array.from({ length: 6 }).map((_, index) => (
-                <SkeletonCard key={index} />
-              ))
-            : (data?.items ?? []).map((article) => (
-                <ArticleCard key={article.id} article={article} />
-              ))}
+        <div className="mt-8 flex flex-wrap items-end justify-between gap-2">
+          <p className="text-xs text-slate-500">
+            {data ? `Showing ${data.items.length} of ${data.total} updates.` : "Loading updates..."}
+          </p>
         </div>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {(data?.items ?? []).map((article) => (
+            <ArticleCard key={`${article.id}-${article.slug}`} article={article} />
+          ))}
+        </div>
+
+        {loading || loadingMore ? (
+          <div className="mt-8 flex justify-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">
+              <Spinner className="h-4 w-4" />
+              {loading ? "Loading updates..." : "Loading more updates..."}
+            </div>
+          </div>
+        ) : null}
 
         {!loading && (data?.items.length ?? 0) > 0 ? (
           <div className="mt-8">
@@ -213,16 +239,21 @@ export function ArticlesClient() {
           </div>
         ) : null}
 
-        <div className="mt-10">
-          <Pagination
-            page={filters.page}
-            pages={data?.pages ?? 1}
-            onChange={(page) => {
-              setFilters((previous) => ({ ...previous, page }));
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-          />
-        </div>
+        {!loading && data && data.page < data.pages ? (
+          <div className="mt-10 flex justify-center">
+            <button
+              type="button"
+              className={buttonClass("secondary")}
+              disabled={loadingMore}
+              onClick={() =>
+                setFilters((previous) => ({ ...previous, page: previous.page + 1 }))
+              }
+            >
+              {loadingMore ? <Spinner className="h-4 w-4" /> : null}
+              Load more updates
+            </button>
+          </div>
+        ) : null}
       </section>
     </div>
   );

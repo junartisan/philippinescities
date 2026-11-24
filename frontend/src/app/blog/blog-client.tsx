@@ -14,7 +14,7 @@ import {
   inputClass,
   Pagination,
   selectClass,
-  SkeletonCard,
+  Spinner,
 } from "@/components/ui";
 import { CITY_POST_TYPE_OPTIONS } from "@/lib/blog";
 import { cn } from "@/lib/utils";
@@ -28,7 +28,7 @@ interface Filters {
   page: number;
 }
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 6;
 
 export function BlogClient() {
   const searchParams = useSearchParams();
@@ -44,6 +44,7 @@ export function BlogClient() {
   const [searchInput, setSearchInput] = useState(filters.search);
   const [data, setData] = useState<CityPostList | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -78,19 +79,37 @@ export function BlogClient() {
     if (filters.type) params.set("type", filters.type);
     params.set("page", String(filters.page));
     params.set("page_size", String(PAGE_SIZE));
-    window.history.replaceState(null, "", `/blog?${params.toString()}`);
 
-    setLoading(true);
+    const isFirstPage = filters.page === 1;
+    window.history.replaceState(
+      null,
+      "",
+      `/blog${filters.page > 1 || filters.search || filters.cityId || filters.categoryId || filters.type ? `?${params.toString()}` : ""}`,
+    );
+
+    if (isFirstPage) setLoading(true);
+    else setLoadingMore(true);
     setError("");
+
     api<CityPostList>(`/api/city-posts?${params.toString()}`)
       .then((result) => {
-        if (active) setData(result);
+        if (!active) return;
+        setData((previous) =>
+          isFirstPage || !previous
+            ? result
+            : {
+                ...result,
+                items: [...previous.items, ...result.items],
+              },
+        );
       })
       .catch((err) => {
         if (active) setError(errorMessage(err));
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (!active) return;
+        setLoading(false);
+        setLoadingMore(false);
       });
     return () => {
       active = false;
@@ -258,20 +277,25 @@ export function BlogClient() {
           <div>
             <h2 className="text-lg font-semibold text-slate-900">Recent posts</h2>
             <p className="mt-1 text-xs text-slate-500">
-              Latest city guides, stories, and events.
+              {data ? `Showing ${data.items.length} of ${data.total} posts.` : "Latest city guides, stories, and events."}
             </p>
           </div>
         </div>
 
         <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {loading
-            ? Array.from({ length: 6 }).map((_, index) => (
-                <SkeletonCard key={index} />
-              ))
-            : (data?.items ?? []).map((post) => (
-                <CityPostCard key={post.id} post={post} />
-              ))}
+          {(data?.items ?? []).map((post) => (
+            <CityPostCard key={`${post.id}-${post.slug}`} post={post} />
+          ))}
         </div>
+
+        {loading || loadingMore ? (
+          <div className="mt-8 flex justify-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">
+              <Spinner className="h-4 w-4" />
+              {loading ? "Loading articles..." : "Loading more articles..."}
+            </div>
+          </div>
+        ) : null}
 
         {!loading && (data?.items.length ?? 0) > 0 ? (
           <div className="mt-8">
@@ -307,16 +331,21 @@ export function BlogClient() {
           </div>
         ) : null}
 
-        <div className="mt-10">
-          <Pagination
-            page={filters.page}
-            pages={data?.pages ?? 1}
-            onChange={(page) => {
-              setFilters((previous) => ({ ...previous, page }));
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-          />
-        </div>
+        {!loading && data && data.page < data.pages ? (
+          <div className="mt-10 flex justify-center">
+            <button
+              type="button"
+              className={buttonClass("secondary")}
+              disabled={loadingMore}
+              onClick={() =>
+                setFilters((previous) => ({ ...previous, page: previous.page + 1 }))
+              }
+            >
+              {loadingMore ? <Spinner className="h-4 w-4" /> : null}
+              Load more articles
+            </button>
+          </div>
+        ) : null}
       </section>
     </div>
   );
