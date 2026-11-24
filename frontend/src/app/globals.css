@@ -102,3 +102,35 @@ body {
   height: auto;
   border-radius: 0.75rem;
 }
+
+.rich-text code {
+  border-radius: 0.375rem;
+  background: #f5f5f4;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.875em;
+}
+
+.rich-text pre code {
+  background: transparent;
+  padding: 0;
+  font-size: inherit;
+}
+
+.rich-text table {
+  margin: 1rem 0;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.rich-text td,
+.rich-text th {
+  border: 1px solid #d6d3d1;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+.rich-text th {
+  background: #f5f5f4;
+  font-weight: 600;
+}

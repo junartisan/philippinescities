@@ -142,9 +142,9 @@ export default function ArticleDetailPage() {
             {article.cover_image_url ? (
               <div
                 role="img"
-                aria-label={article.title}
-                className="mt-6 h-64 w-full rounded-2xl bg-stone-200 bg-cover bg-center ring-1 ring-black/5"
-                style={{ backgroundImage: `url(${article.cover_image_url})` }}
+                aria-label={`Cover image for ${article.title}`}
+                className="mt-6 aspect-[4/3] w-full rounded-2xl bg-stone-200 bg-contain bg-center bg-no-repeat ring-1 ring-black/5 sm:aspect-[16/9]"
+                style={{ backgroundImage: `url("${article.cover_image_url}")` }}
               />
             ) : null}
 

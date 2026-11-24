@@ -36,6 +36,7 @@ _ALLOWED_RICH_TEXT_TAGS = {
     "a",
     "blockquote",
     "br",
+    "code",
     "em",
     "figcaption",
     "figure",
@@ -47,16 +48,47 @@ _ALLOWED_RICH_TEXT_TAGS = {
     "li",
     "ol",
     "p",
+    "pre",
+    "s",
     "strong",
+    "sub",
+    "sup",
+    "table",
+    "tbody",
+    "td",
+    "th",
+    "thead",
+    "tr",
     "u",
     "ul",
 }
 _VOID_RICH_TEXT_TAGS = {"br", "hr", "img"}
 _IGNORED_RICH_TEXT_TAGS = {"script", "style"}
-_TAG_ALIASES = {"h1": "h2", "h5": "h3", "h6": "h3"}
-_BLOCK_TAGS = {"p", "h2", "h3", "h4", "blockquote", "ul", "ol", "figure", "hr"}
+_TAG_ALIASES = {
+    "b": "strong",
+    "del": "s",
+    "h1": "h2",
+    "h5": "h3",
+    "h6": "h3",
+    "i": "em",
+    "strike": "s",
+}
+_ALIGNED_RICH_TEXT_TAGS = {"blockquote", "h2", "h3", "h4", "p"}
+_BLOCK_TAGS = {
+    "blockquote",
+    "figure",
+    "h2",
+    "h3",
+    "h4",
+    "hr",
+    "ol",
+    "p",
+    "pre",
+    "table",
+    "ul",
+}
 _EMPTY_INLINE_TAG_RE = re.compile(
-    r"<(em|strong|u|a)\b[^>]*>\s*</\1>", re.IGNORECASE
+    r"<(code|em|s|strong|sub|sup|u|a)\b[^>]*>\s*</\1>", re.IGNORECASE
 )
 _SHORTCODE_CAPTION_RE = re.compile(r"\[caption\b[^\]]*\](.*?)\[/caption\]", re.IGNORECASE | re.DOTALL)
 _SHORTCODE_LIST_RE = re.compile(r"\[list\b[^\]]*\](.*?)\[/list\]", re.IGNORECASE | re.DOTALL)
@@ -111,6 +143,26 @@ class _RichTextSanitizer(HTMLParser):
                     rendered.append(f'{name}="{escape(value, quote=True)}"')
                 elif name in {"width", "height"} and value and value.isdigit():
                     rendered.append(f'{name}="{value}"')
+        elif tag in {"td", "th"}:
+            for name, value in attrs:
+                name = name.lower()
+                if name in {"colspan", "rowspan"} and value and value.isdigit():
+                    span = int(value)
+                    if 1 <= span <= 20:
+                        rendered.append(f'{name}="{span}"')
+        if tag in _ALIGNED_RICH_TEXT_TAGS:
+            for name, value in attrs:
+                if name.lower() != "style" or not value:
+                    continue
+                align = re.search(
+                    r"(?:^|;)\s*text-align\s*:\s*(left|center|right|justify)\b",
+                    value,
+                    re.IGNORECASE,
+                )
+                if align:
+                    rendered.append(
+                        f'style="text-align: {align.group(1).lower()}"'
+                    )
         attributes = f" {' '.join(rendered)}" if rendered else ""
         self.parts.append(f"<{tag}{attributes}>")
 

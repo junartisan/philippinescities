@@ -17,9 +17,9 @@ export function CityPostCard({ post }: { post: CityPost }) {
         {post.cover_image_url ? (
           <div
             role="img"
-            aria-label={post.title}
-            className="h-40 w-full bg-stone-200 bg-cover bg-center"
-            style={{ backgroundImage: `url(${post.cover_image_url})` }}
+            aria-label={`Cover image for ${post.title}`}
+            className="aspect-[16/9] w-full bg-stone-200 bg-cover bg-center"
+            style={{ backgroundImage: `url("${post.cover_image_url}")` }}
           />
         ) : null}
       </Link>

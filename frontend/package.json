@@ -9,10 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@tinymce/tinymce-react": "^6.3.1",
     "lucide-react": "^1.73.0",
     "next": "16.4.6",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "tinymce": "^8.10.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
