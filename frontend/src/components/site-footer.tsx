@@ -80,7 +80,12 @@ export function SiteFooter() {
       <div className="border-t border-stone-200">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-5 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
           <p>© Philippines Cities. Philippine business directory.</p>
-          <p>Listings and reviews are managed by the community and its admins.</p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <Link className="hover:text-emerald-700" href="/privacy-policy">
+              Privacy Policy
+            </Link>
+            <p>Listings and reviews are managed by the community and its admins.</p>
+          </div>
         </div>
       </div>
     </footer>
