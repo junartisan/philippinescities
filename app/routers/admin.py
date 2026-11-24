@@ -63,7 +63,12 @@ from app.schemas import (
     SubscriptionDisapprove,
     UserOut,
 )
-from app.utils import plain_text_length, sanitize_post_body, unique_slug
+from app.utils import (
+    plain_text_length,
+    sanitize_post_body,
+    unique_slug,
+    validate_city_post_parent,
+)
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -841,6 +846,9 @@ def create_city_post(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid blog_category_id",
         )
+    parent_error = validate_city_post_parent(db, None, payload.parent_id)
+    if parent_error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=parent_error)
     title = payload.title.strip()
     body = sanitize_post_body(payload.body.strip())
     if len(title) < 3:
@@ -859,6 +867,7 @@ def create_city_post(
     post = CityPost(
         city_id=payload.city_id,
         blog_category_id=payload.blog_category_id,
+        parent_id=payload.parent_id,
         author_id=admin.id,
         title=title,
         slug=unique_slug(db, CityPost, title),
@@ -902,6 +911,10 @@ def update_city_post(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid blog_category_id",
         )
+    if "parent_id" in data:
+        parent_error = validate_city_post_parent(db, post.id, data["parent_id"])
+        if parent_error:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=parent_error)
     if "title" in data:
         if data["title"] is None:
             raise HTTPException(

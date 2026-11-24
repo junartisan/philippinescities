@@ -437,6 +437,9 @@ class CityPost(TimestampMixin, Base):
     blog_category_id: Mapped[int | None] = mapped_column(
         ForeignKey("blog_categories.id", ondelete="SET NULL"), index=True
     )
+    parent_id: Mapped[int | None] = mapped_column(
+        ForeignKey("city_posts.id", ondelete="SET NULL"), index=True
+    )
     author_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), index=True
     )
@@ -471,6 +474,12 @@ class CityPost(TimestampMixin, Base):
     city: Mapped[City | None] = relationship(back_populates="city_posts")
     blog_category: Mapped[BlogCategory | None] = relationship(
         back_populates="city_posts"
+    )
+    parent: Mapped[CityPost | None] = relationship(
+        back_populates="children", remote_side=[id]
+    )
+    children: Mapped[list[CityPost]] = relationship(
+        back_populates="parent", order_by="CityPost.title"
     )
     author: Mapped[User | None] = relationship(
         back_populates="city_posts", foreign_keys=[author_id]

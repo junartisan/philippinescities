@@ -43,6 +43,7 @@ import type {
   City,
   CityPost,
   CityPostList,
+  CityPostOption,
 } from "@/lib/types";
 
 const PAGE_SIZE = 12;
@@ -63,6 +64,7 @@ export default function AdminBlogPage() {
   const [posts, setPosts] = useState<CityPostList | null>(null);
   const [cities, setCities] = useState<City[]>([]);
   const [categories, setCategories] = useState<BlogCategory[]>([]);
+  const [parentOptions, setParentOptions] = useState<CityPostOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -86,16 +88,19 @@ export default function AdminBlogPage() {
     Promise.all([
       api<City[]>("/api/cities"),
       api<BlogCategory[]>("/api/blog-categories"),
+      api<CityPostOption[]>("/api/city-posts/parent-options"),
     ])
-      .then(([cityData, categoryData]) => {
+      .then(([cityData, categoryData, parentData]) => {
         if (!active) return;
         setCities(cityData);
         setCategories(categoryData);
+        setParentOptions(parentData);
       })
       .catch(() => {
         if (!active) return;
         setCities([]);
         setCategories([]);
+        setParentOptions([]);
       });
     return () => {
       active = false;
@@ -285,6 +290,7 @@ export default function AdminBlogPage() {
             post={editing}
             cities={cities}
             categories={categories}
+            parentOptions={parentOptions}
             onSaved={handleSaved}
             onCancel={() => {
               setEditorOpen(false);

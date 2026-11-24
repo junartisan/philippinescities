@@ -96,6 +96,10 @@ def ensure_schema(engine: Engine) -> None:
                 connection.exec_driver_sql(
                     "ALTER TABLE city_posts ADD COLUMN blog_category_id INTEGER"
                 )
+            if "parent_id" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE city_posts ADD COLUMN parent_id INTEGER"
+                )
             if columns.get("city_id", {}).get("nullable") is False:
                 if engine.dialect.name == "postgresql":
                     connection.exec_driver_sql(
@@ -138,6 +142,20 @@ def ensure_schema(engine: Engine) -> None:
                 "CREATE INDEX IF NOT EXISTS ix_city_posts_source_url "
                 "ON city_posts (source_url)"
             )
+            connection.exec_driver_sql(
+                "CREATE INDEX IF NOT EXISTS ix_city_posts_parent_id "
+                "ON city_posts (parent_id)"
+            )
+            if engine.dialect.name == "postgresql":
+                foreign_keys = {
+                    foreign_key["name"]
+                    for foreign_key in inspector.get_foreign_keys("city_posts")
+                }
+                if "fk_city_posts_parent_id" not in foreign_keys:
+                    connection.exec_driver_sql(
+                        "ALTER TABLE city_posts ADD CONSTRAINT fk_city_posts_parent_id "
+                        "FOREIGN KEY (parent_id) REFERENCES city_posts(id) ON DELETE SET NULL"
+                    )
             connection.exec_driver_sql(
                 "CREATE INDEX IF NOT EXISTS ix_city_posts_blog_category_id "
                 "ON city_posts (blog_category_id)"

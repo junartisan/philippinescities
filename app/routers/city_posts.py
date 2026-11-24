@@ -13,8 +13,10 @@ from app.models import (
     UserRole,
 )
 from app.schemas import (
+    CityPostBreadcrumbOut,
     CityPostCommentCreate,
     CityPostCommentOut,
+    CityPostOptionOut,
     CityPostPublicList,
     CityPostPublicOut,
 )
@@ -40,6 +42,45 @@ def _get_published_post(db: Session, slug: str) -> CityPost:
     if post is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
     return post
+
+
+def _public_breadcrumbs(db: Session, post: CityPost) -> list[CityPostBreadcrumbOut]:
+    chain: list[CityPostBreadcrumbOut] = []
+    current: CityPost | None = post
+    seen: set[int] = set()
+    while current is not None and len(chain) < 10:
+        if current.is_published and current.review_status == CityPostReviewStatus.approved:
+            chain.append(
+                CityPostBreadcrumbOut(
+                    id=current.id,
+                    title=current.title,
+                    slug=current.slug,
+                )
+            )
+        parent_id = current.parent_id
+        if parent_id is None or parent_id in seen:
+            break
+        seen.add(parent_id)
+        current = db.get(CityPost, parent_id)
+    chain.reverse()
+    return chain
+
+
+def _public_children(db: Session, post: CityPost) -> list[CityPostBreadcrumbOut]:
+    children = db.scalars(
+        select(CityPost)
+        .where(
+            CityPost.parent_id == post.id,
+            CityPost.is_published.is_(True),
+            CityPost.review_status == CityPostReviewStatus.approved,
+        )
+        .order_by(CityPost.title.asc(), CityPost.id.asc())
+        .limit(50)
+    ).all()
+    return [
+        CityPostBreadcrumbOut(id=child.id, title=child.title, slug=child.slug)
+        for child in children
+    ]
 
 
 @router.get("", response_model=CityPostPublicList)
@@ -95,9 +136,26 @@ def list_city_posts(
     )
 
 
+@router.get("/parent-options", response_model=list[CityPostOptionOut])
+def list_city_post_parent_options(db: Session = Depends(get_db)):
+    return db.scalars(
+        select(CityPost)
+        .where(
+            CityPost.is_published.is_(True),
+            CityPost.review_status == CityPostReviewStatus.approved,
+        )
+        .order_by(CityPost.title.asc(), CityPost.id.asc())
+        .limit(300)
+    ).all()
+
+
 @router.get("/{slug}", response_model=CityPostPublicOut)
 def get_city_post(slug: str, db: Session = Depends(get_db)):
-    return _get_published_post(db, slug)
+    post = _get_published_post(db, slug)
+    result = CityPostPublicOut.model_validate(post)
+    result.breadcrumbs = _public_breadcrumbs(db, post)
+    result.children = _public_children(db, post)
+    return result
 
 
 @router.get("/{slug}/comments", response_model=list[CityPostCommentOut])

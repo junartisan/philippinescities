@@ -88,14 +88,41 @@ async function PostStructuredData({ params }: MetadataProps) {
     abstract: post.summary ? plainText(post.summary) : undefined,
     mainEntityOfPage: absoluteUrl(path),
   };
+  const postCrumbs = post.breadcrumbs?.length
+    ? post.breadcrumbs
+    : [{ id: post.id, title: post.title, slug: post.slug }];
+  const breadcrumbItems = [
+    { "@type": "ListItem", position: 1, name: "Home", item: absoluteUrl("/") },
+    { "@type": "ListItem", position: 2, name: "City Blog", item: absoluteUrl("/blog") },
+  ];
+  if (post.city) {
+    breadcrumbItems.push({
+      "@type": "ListItem",
+      position: breadcrumbItems.length + 1,
+      name: post.city.name,
+      item: absoluteUrl(`/cities/${post.city.slug}`),
+    });
+  }
+  if (post.blog_category) {
+    breadcrumbItems.push({
+      "@type": "ListItem",
+      position: breadcrumbItems.length + 1,
+      name: post.blog_category.name,
+      item: absoluteUrl(`/blog/categories/${post.blog_category.slug}`),
+    });
+  }
+  for (const crumb of postCrumbs) {
+    breadcrumbItems.push({
+      "@type": "ListItem",
+      position: breadcrumbItems.length + 1,
+      name: crumb.title,
+      item: absoluteUrl(`/blog/${crumb.slug}`),
+    });
+  }
   const breadcrumbs = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: absoluteUrl("/") },
-      { "@type": "ListItem", position: 2, name: "City Blog", item: absoluteUrl("/blog") },
-      { "@type": "ListItem", position: 3, name: post.title, item: absoluteUrl(path) },
-    ],
+    itemListElement: breadcrumbItems,
   };
 
   return <StructuredData data={[schema, breadcrumbs]} />;

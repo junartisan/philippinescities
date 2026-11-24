@@ -326,9 +326,23 @@ class BlogCategoryOut(ORMModel):
     updated_at: datetime
 
 
+class CityPostBreadcrumbOut(ORMModel):
+    id: int
+    title: str
+    slug: str
+
+
+class CityPostOptionOut(ORMModel):
+    id: int
+    title: str
+    slug: str
+    parent_id: int | None
+
+
 class CityPostCreate(BaseModel):
     city_id: int | None = None
     blog_category_id: int | None = None
+    parent_id: int | None = None
     title: str = Field(min_length=3, max_length=200)
     summary: str | None = Field(default=None, max_length=500)
     body: str = Field(min_length=10, max_length=200000)
@@ -342,6 +356,7 @@ class CityPostCreate(BaseModel):
 class CityPostUpdate(BaseModel):
     city_id: int | None = Field(default=None)
     blog_category_id: int | None = None
+    parent_id: int | None = None
     title: str | None = Field(default=None, min_length=3, max_length=200)
     summary: str | None = Field(default=None, max_length=500)
     body: str | None = Field(default=None, min_length=10, max_length=200000)
@@ -356,6 +371,7 @@ class CityPostOut(ORMModel):
     id: int
     city_id: int | None
     blog_category_id: int | None
+    parent_id: int | None
     title: str
     slug: str
     summary: str | None
@@ -394,6 +410,7 @@ class CityPostPublicOut(ORMModel):
     id: int
     city_id: int | None
     blog_category_id: int | None
+    parent_id: int | None
     title: str
     slug: str
     summary: str | None
@@ -408,6 +425,8 @@ class CityPostPublicOut(ORMModel):
     city: CityOut | None
     blog_category: BlogCategoryOut | None
     author: UserPublic | None
+    breadcrumbs: list[CityPostBreadcrumbOut] = Field(default_factory=list)
+    children: list[CityPostBreadcrumbOut] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
 
@@ -515,6 +534,7 @@ class BlogContributorStatusOut(BaseModel):
 class ContributorPostCreate(BaseModel):
     city_id: int | None = None
     blog_category_id: int | None = None
+    parent_id: int | None = None
     title: str = Field(min_length=3, max_length=200)
     summary: str | None = Field(default=None, max_length=500)
     body: str = Field(min_length=10, max_length=200000)
@@ -528,6 +548,7 @@ class ContributorPostCreate(BaseModel):
 class ContributorPostUpdate(BaseModel):
     city_id: int | None = None
     blog_category_id: int | None = None
+    parent_id: int | None = None
     title: str | None = Field(default=None, min_length=3, max_length=200)
     summary: str | None = Field(default=None, max_length=500)
     body: str | None = Field(default=None, min_length=10, max_length=200000)

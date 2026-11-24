@@ -29,7 +29,12 @@ from app.schemas import (
     ContributorPostUpdate,
     WriterCredentialOut,
 )
-from app.utils import plain_text_length, sanitize_post_body, unique_slug
+from app.utils import (
+    plain_text_length,
+    sanitize_post_body,
+    unique_slug,
+    validate_city_post_parent,
+)
 
 router = APIRouter(prefix="/contributor", tags=["Contributors"])
 
@@ -281,6 +286,9 @@ def create_my_post(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid blog_category_id",
         )
+    parent_error = validate_city_post_parent(db, None, payload.parent_id)
+    if parent_error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=parent_error)
     if payload.city_id is not None:
         _ensure_city_access(profile, payload.city_id)
     title = payload.title.strip()
@@ -301,6 +309,7 @@ def create_my_post(
     post = CityPost(
         city_id=payload.city_id,
         blog_category_id=payload.blog_category_id,
+        parent_id=payload.parent_id,
         author_id=user.id,
         title=title,
         slug=unique_slug(db, CityPost, title),
@@ -358,6 +367,10 @@ def update_my_post(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid blog_category_id",
         )
+    if "parent_id" in data:
+        parent_error = validate_city_post_parent(db, post.id, data["parent_id"])
+        if parent_error:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=parent_error)
     target_city_id = data.get("city_id", post.city_id)
     if target_city_id is not None:
         _ensure_city_access(profile, target_city_id)

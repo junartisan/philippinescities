@@ -901,6 +901,59 @@ def test_city_blog_flow(client):
     assert client.get(f"/api/city-posts/{event.json()['slug']}").status_code == 404
 
 
+def test_city_post_parent_child_breadcrumbs(client):
+    city_id = client.get("/api/cities").json()[0]["id"]
+    admin_headers = login(client, "admin@example.com", "adminpassword")
+
+    def create_post(title: str, parent_id: int | None = None):
+        response = client.post(
+            "/api/admin/city-posts",
+            headers=admin_headers,
+            json={
+                "city_id": city_id,
+                "parent_id": parent_id,
+                "title": title,
+                "body": f"{title} contains enough detail for the city blog.",
+                "is_published": True,
+            },
+        )
+        assert response.status_code == 201, response.text
+        return response.json()
+
+    parent = create_post("City Series: Parent guide")
+    child = create_post("City Series: Child guide", parent["id"])
+    grandchild = create_post("City Series: Grandchild guide", child["id"])
+
+    detail = client.get(f"/api/city-posts/{child['slug']}")
+    assert detail.status_code == 200
+    data = detail.json()
+    assert data["parent_id"] == parent["id"]
+    assert [crumb["id"] for crumb in data["breadcrumbs"]] == [parent["id"], child["id"]]
+    assert [crumb["id"] for crumb in data["children"]] == [grandchild["id"]]
+
+    options = client.get("/api/city-posts/parent-options")
+    assert options.status_code == 200
+    assert {option["id"] for option in options.json()} >= {
+        parent["id"],
+        child["id"],
+        grandchild["id"],
+    }
+
+    self_parent = client.patch(
+        f"/api/admin/city-posts/{child['id']}",
+        headers=admin_headers,
+        json={"parent_id": child["id"]},
+    )
+    assert self_parent.status_code == 400
+
+    cycle = client.patch(
+        f"/api/admin/city-posts/{parent['id']}",
+        headers=admin_headers,
+        json={"parent_id": grandchild["id"]},
+    )
+    assert cycle.status_code == 400
+
+
 def test_city_post_comments(client):
     city_id = client.get("/api/cities").json()[0]["id"]
     admin_headers = login(client, "admin@example.com", "adminpassword")

@@ -198,10 +198,24 @@ export interface ArticlePayload {
   event_ends_at: string | null;
 }
 
+export interface CityPostBreadcrumb {
+  id: number;
+  title: string;
+  slug: string;
+}
+
+export interface CityPostOption {
+  id: number;
+  title: string;
+  slug: string;
+  parent_id: number | null;
+}
+
 export interface CityPost {
   id: number;
   city_id: number | null;
   blog_category_id: number | null;
+  parent_id: number | null;
   title: string;
   slug: string;
   summary: string | null;
@@ -219,6 +233,8 @@ export interface CityPost {
   blog_category: BlogCategory | null;
   author: UserPublic | null;
   reviewed_by: UserPublic | null;
+  breadcrumbs?: CityPostBreadcrumb[];
+  children?: CityPostBreadcrumb[];
   created_at: string;
   updated_at: string;
 }
@@ -243,6 +259,7 @@ export interface CityPostComment {
 export interface CityPostPayload {
   city_id: number | null;
   blog_category_id: number | null;
+  parent_id: number | null;
   title: string;
   summary: string | null;
   body: string;
@@ -291,6 +308,7 @@ export interface ContributorStatus {
 export interface ContributorPostPayload {
   city_id: number | null;
   blog_category_id: number | null;
+  parent_id: number | null;
   title: string;
   summary: string | null;
   body: string;

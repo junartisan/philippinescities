@@ -1,4 +1,9 @@
-import type { BlogContributorStatus, CityPostReviewStatus, CityPostType } from "@/lib/types";
+import type {
+  BlogContributorStatus,
+  CityPostOption,
+  CityPostReviewStatus,
+  CityPostType,
+} from "@/lib/types";
 
 export const CITY_POST_TYPE_LABELS: Record<CityPostType, string> = {
   article: "Article",
@@ -43,6 +48,40 @@ export function cityPostReviewTone(
     default:
       return "stone";
   }
+}
+
+export function parentPostOptions(
+  options: CityPostOption[],
+  postId?: number,
+): CityPostOption[] {
+  const excluded = new Set<number>();
+  if (postId) {
+    excluded.add(postId);
+    for (let pass = 0; pass < options.length + 1; pass += 1) {
+      let changed = false;
+      for (const option of options) {
+        if (option.parent_id && excluded.has(option.parent_id) && !excluded.has(option.id)) {
+          excluded.add(option.id);
+          changed = true;
+        }
+      }
+      if (!changed) break;
+    }
+  }
+
+  return options
+    .filter((option) => !excluded.has(option.id))
+    .map((option) => {
+      let depth = 0;
+      let parentId = option.parent_id;
+      const seen = new Set<number>([option.id]);
+      while (parentId && depth < 8 && !seen.has(parentId)) {
+        depth += 1;
+        seen.add(parentId);
+        parentId = options.find((candidate) => candidate.id === parentId)?.parent_id ?? null;
+      }
+      return { ...option, title: `${"— ".repeat(depth)}${option.title}` };
+    });
 }
 
 export function contributorStatusTone(

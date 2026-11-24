@@ -6,6 +6,8 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.models import CityPost
+
 
 def slugify(value: str) -> str:
     value = re.sub(r"[^a-z0-9]+", "-", value.strip().lower())
@@ -109,6 +111,37 @@ def _safe_link(value: str) -> bool:
 def _safe_image(value: str) -> bool:
     candidate = value.strip().lower()
     return candidate.startswith(("http://", "https://", "/"))
+
+
+def validate_city_post_parent(
+    db: Session,
+    post_id: int | None,
+    parent_id: int | None,
+) -> str | None:
+    if parent_id is None:
+        return None
+    parent = db.get(CityPost, parent_id)
+    if parent is None:
+        return "Invalid parent_id"
+    if post_id is not None and parent_id == post_id:
+        return "A post cannot be its own parent"
+
+    current = parent
+    seen = {parent_id}
+    for _ in range(50):
+        ancestor_id = current.parent_id
+        if ancestor_id is None:
+            break
+        if post_id is not None and ancestor_id == post_id:
+            return "Parent selection would create a cycle"
+        if ancestor_id in seen:
+            break
+        seen.add(ancestor_id)
+        ancestor = db.get(CityPost, ancestor_id)
+        if ancestor is None:
+            break
+        current = ancestor
+    return None
 
 
 class _RichTextSanitizer(HTMLParser):

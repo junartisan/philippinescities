@@ -43,6 +43,7 @@ import type {
   City,
   CityPost,
   CityPostList,
+  CityPostOption,
   ContributorStatus,
 } from "@/lib/types";
 
@@ -52,6 +53,7 @@ function ContributorContent() {
   const [posts, setPosts] = useState<CityPostList | null>(null);
   const [cities, setCities] = useState<City[]>([]);
   const [categories, setCategories] = useState<BlogCategory[]>([]);
+  const [parentOptions, setParentOptions] = useState<CityPostOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -68,13 +70,15 @@ function ContributorContent() {
       api<ContributorStatus>("/api/contributor/status"),
       api<City[]>("/api/cities"),
       api<BlogCategory[]>("/api/blog-categories"),
+      api<CityPostOption[]>("/api/city-posts/parent-options"),
     ])
-      .then(([statusData, cityData, categoryData]) => {
+      .then(([statusData, cityData, categoryData, parentData]) => {
         if (!active) return;
         setStatus(statusData);
         setSelectedCityIds(statusData.cities.map((city) => city.id));
         setCities(cityData);
         setCategories(categoryData);
+        setParentOptions(parentData);
       })
       .catch((err) => {
         if (active) setError(errorMessage(err));
@@ -462,6 +466,7 @@ function ContributorContent() {
                 post={editing}
                 cities={allowedCities}
                 categories={categories}
+                parentOptions={parentOptions}
                 onSaved={handleSaved}
                 onCancel={() => {
                   setEditorOpen(false);

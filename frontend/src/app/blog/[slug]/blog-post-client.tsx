@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { Fragment, useEffect, useState, type FormEvent } from "react";
 import {
-  ArrowLeft,
   CalendarDays,
+  ChevronRight,
   Clock3,
   MapPin,
   Newspaper,
@@ -115,17 +115,71 @@ export default function CityPostDetailPage() {
     user?.role === "contributor"
       ? `/contributor?edit=${post.id}`
       : `/admin/blog?edit=${post.id}`;
+  const breadcrumbs = post.breadcrumbs?.length
+    ? post.breadcrumbs
+    : [{ id: post.id, title: post.title, slug: post.slug }];
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link
-          href="/blog"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition hover:text-emerald-700"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          All city posts
-        </Link>
+        <nav aria-label="Breadcrumb">
+          <ol className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+            <li>
+              <Link href="/" className="transition hover:text-emerald-700">
+                Home
+              </Link>
+            </li>
+            <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+            <li>
+              <Link href="/blog" className="transition hover:text-emerald-700">
+                City Blog
+              </Link>
+            </li>
+            {post.city ? (
+              <Fragment key={`city-${post.city.id}`}>
+                <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+                <li>
+                  <Link
+                    href={`/cities/${post.city.slug}`}
+                    className="transition hover:text-emerald-700"
+                  >
+                    {post.city.name}
+                  </Link>
+                </li>
+              </Fragment>
+            ) : null}
+            {post.blog_category ? (
+              <Fragment key={`category-${post.blog_category.id}`}>
+                <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+                <li>
+                  <Link
+                    href={`/blog/categories/${post.blog_category.slug}`}
+                    className="transition hover:text-emerald-700"
+                  >
+                    {post.blog_category.name}
+                  </Link>
+                </li>
+              </Fragment>
+            ) : null}
+            {breadcrumbs.map((crumb) => (
+              <Fragment key={crumb.id}>
+                <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+                <li aria-current={crumb.slug === post.slug ? "page" : undefined}>
+                  {crumb.slug === post.slug ? (
+                    <span className="font-medium text-slate-700">{crumb.title}</span>
+                  ) : (
+                    <Link
+                      href={`/blog/${crumb.slug}`}
+                      className="transition hover:text-emerald-700"
+                    >
+                      {crumb.title}
+                    </Link>
+                  )}
+                </li>
+              </Fragment>
+            ))}
+          </ol>
+        </nav>
         {canEdit ? (
           <Link href={editHref} className={buttonClass("secondary", "sm")}>
             <Pencil className="h-4 w-4" />
@@ -222,6 +276,27 @@ export default function CityPostDetailPage() {
 
             <ShareButtons title={post.title} path={`/blog/${post.slug}`} />
           </div>
+
+          {post.children && post.children.length > 0 ? (
+            <section className="mt-6 rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-slate-900">Child posts</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Follow the next parts in this post series.
+              </p>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                {post.children.map((child) => (
+                  <Link
+                    key={child.id}
+                    href={`/blog/${child.slug}`}
+                    className="flex items-center justify-between gap-2 rounded-xl border border-stone-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+                  >
+                    {child.title}
+                    <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
+                  </Link>
+                ))}
+              </div>
+            </section>
+          ) : null}
 
           <CityPostComments slug={post.slug} />
         </article>

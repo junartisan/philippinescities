@@ -12,13 +12,14 @@ import {
   Spinner,
   textareaClass,
 } from "@/components/ui";
-import { CITY_POST_TYPE_OPTIONS } from "@/lib/blog";
+import { CITY_POST_TYPE_OPTIONS, parentPostOptions } from "@/lib/blog";
 import { CoverImageInput } from "@/components/cover-image-input";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import type {
   BlogCategory,
   City,
   CityPost,
+  CityPostOption,
   CityPostPayload,
   CityPostType,
 } from "@/lib/types";
@@ -26,6 +27,7 @@ import type {
 interface FormState {
   city_id: string;
   blog_category_id: string;
+  parent_id: string;
   title: string;
   summary: string;
   body: string;
@@ -54,6 +56,7 @@ function initialForm(post: CityPost | null): FormState {
   return {
     city_id: post?.city_id ? String(post.city_id) : "",
     blog_category_id: String(post?.blog_category_id ?? ""),
+    parent_id: String(post?.parent_id ?? ""),
     title: post?.title ?? "",
     summary: post?.summary ?? "",
     body: post?.body ?? "",
@@ -69,12 +72,14 @@ export function CityPostEditor({
   post,
   cities,
   categories,
+  parentOptions,
   onSaved,
   onCancel,
 }: {
   post: CityPost | null;
   cities: City[];
   categories: BlogCategory[];
+  parentOptions: CityPostOption[];
   onSaved: (post: CityPost) => void;
   onCancel: () => void;
 }) {
@@ -100,6 +105,7 @@ export function CityPostEditor({
       blog_category_id: form.blog_category_id
         ? Number(form.blog_category_id)
         : null,
+      parent_id: form.parent_id ? Number(form.parent_id) : null,
       title: form.title.trim(),
       summary: form.summary.trim() || null,
       body: form.body.trim(),
@@ -213,6 +219,25 @@ export function CityPostEditor({
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
                 {category.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field
+          label="Parent post"
+          htmlFor="city-post-parent"
+          hint="Optional. Child posts appear in breadcrumbs under their parent."
+        >
+          <select
+            id="city-post-parent"
+            className={selectClass}
+            value={form.parent_id}
+            onChange={(event) => update("parent_id", event.target.value)}
+          >
+            <option value="">No parent (top-level post)</option>
+            {parentPostOptions(parentOptions, post?.id).map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.title}
               </option>
             ))}
           </select>
