@@ -16,6 +16,7 @@ import {
   selectClass,
   SkeletonCard,
 } from "@/components/ui";
+import { SITE_NAME } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import type { BusinessList, Category, City } from "@/lib/types";
 
@@ -108,17 +109,27 @@ export function DirectoryClient() {
   const hasFilters = Boolean(
     filters.search || filters.categoryId || filters.cityId,
   );
+  const selectedCity =
+    cities.find((city) => String(city.id) === filters.cityId) ?? null;
+  const directoryTitle = selectedCity
+    ? `Business Directory in ${selectedCity.name}`
+    : "Business Directory";
+
+  useEffect(() => {
+    if (filters.cityId && cities.length === 0) return;
+    document.title = `${directoryTitle} | ${SITE_NAME}`;
+  }, [cities.length, directoryTitle, filters.cityId]);
 
   return (
     <div>
       <section className="border-b border-stone-200 bg-white">
         <div className="mx-auto max-w-6xl px-4 py-12">
           <h1 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-            Business directory
+            {directoryTitle}
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
             {data && !loading
-              ? `${data.total} approved listing${data.total === 1 ? "" : "s"} across Philippine cities.`
+              ? `${data.total} approved listing${data.total === 1 ? "" : "s"} ${selectedCity ? `in ${selectedCity.name}` : "across Philippine cities"}.`
               : "Find approved businesses by name, category, or city."}
           </p>
         </div>
