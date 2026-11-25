@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type FormEvent } from "react";
+import { Fragment, useEffect, useState, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
-import { RotateCcw, Search, Store } from "lucide-react";
+import { ChevronRight, RotateCcw, Search, Store } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { AdSlot } from "@/components/adsense";
 import { BusinessCard } from "@/components/business-card";
@@ -124,7 +124,42 @@ export function DirectoryClient() {
     <div>
       <section className="border-b border-stone-200 bg-white">
         <div className="mx-auto max-w-6xl px-4 py-12">
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+          <nav aria-label="Breadcrumb">
+            <ol className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+              <li>
+                <Link
+                  href="/"
+                  className="transition hover:text-emerald-700"
+                >
+                  Home
+                </Link>
+              </li>
+              <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+              <li aria-current={selectedCity ? undefined : "page"}>
+                {selectedCity ? (
+                  <Link
+                    href="/businesses"
+                    className="transition hover:text-emerald-700"
+                  >
+                    Business Directory
+                  </Link>
+                ) : (
+                  <span className="font-medium text-slate-700">
+                    Business Directory
+                  </span>
+                )}
+              </li>
+              {selectedCity ? (
+                <Fragment key={`city-${selectedCity.id}`}>
+                  <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+                  <li aria-current="page" className="font-medium text-slate-700">
+                    {selectedCity.name}
+                  </li>
+                </Fragment>
+              ) : null}
+            </ol>
+          </nav>
+          <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
             {directoryTitle}
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
