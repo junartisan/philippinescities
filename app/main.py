@@ -27,6 +27,9 @@ from app.routers import (
 )
 from app.seed import bootstrap_admin, seed_directory
 
+Base.metadata.create_all(bind=engine)
+ensure_schema(engine)
+
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):

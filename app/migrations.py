@@ -267,7 +267,7 @@ def ensure_schema(engine: Engine) -> None:
     with engine.begin() as connection:
         if "business_team_members" not in table_names:
             connection.exec_driver_sql(
-                f"CREATE TABLE business_team_members ("
+                f"CREATE TABLE IF NOT EXISTS business_team_members ("
                 f"id {id_type}, "
                 "business_id INTEGER NOT NULL REFERENCES businesses(id) ON DELETE CASCADE, "
                 "user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, "
@@ -279,7 +279,7 @@ def ensure_schema(engine: Engine) -> None:
             )
         if "business_invitations" not in table_names:
             connection.exec_driver_sql(
-                f"CREATE TABLE business_invitations ("
+                f"CREATE TABLE IF NOT EXISTS business_invitations ("
                 f"id {id_type}, "
                 "business_id INTEGER NOT NULL REFERENCES businesses(id) ON DELETE CASCADE, "
                 "email VARCHAR(255) NOT NULL, "
@@ -295,7 +295,7 @@ def ensure_schema(engine: Engine) -> None:
             )
         if "business_verifications" not in table_names:
             connection.exec_driver_sql(
-                f"CREATE TABLE business_verifications ("
+                f"CREATE TABLE IF NOT EXISTS business_verifications ("
                 f"id {id_type}, "
                 "business_id INTEGER NOT NULL REFERENCES businesses(id) ON DELETE CASCADE, "
                 "method VARCHAR(20) NOT NULL, "
