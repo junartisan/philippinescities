@@ -84,7 +84,7 @@ async function CategoryStructuredData({ params }: MetadataProps) {
       {
         "@type": "ListItem",
         position: 2,
-        name: "Categories",
+        name: "All categories",
         item: absoluteUrl("/categories"),
       },
       {

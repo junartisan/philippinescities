@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, MapPin, Shapes } from "lucide-react";
+import { Fragment, useEffect, useState } from "react";
+import { ArrowRight, ChevronRight, MapPin, Shapes } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { AdSlot } from "@/components/adsense";
 import { BusinessCard } from "@/components/business-card";
@@ -93,22 +93,44 @@ export default function CategoryDetailPage() {
     <div>
       <section className="border-b border-stone-200 bg-white">
         <div className="mx-auto max-w-6xl px-4 py-12">
-          <Link
-            href="/categories"
-            className="inline-flex items-center gap-1 text-sm font-medium text-emerald-700 hover:text-emerald-800"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            All categories
-          </Link>
-          {parent ? (
-            <Link
-              href={`/categories/${parent.slug}`}
-              className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-emerald-700"
-            >
-              {parent.name}
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          ) : null}
+          <nav aria-label="Breadcrumb">
+            <ol className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+              <li>
+                <Link
+                  href="/"
+                  className="transition hover:text-emerald-700"
+                >
+                  Home
+                </Link>
+              </li>
+              <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+              <li>
+                <Link
+                  href="/categories"
+                  className="transition hover:text-emerald-700"
+                >
+                  All categories
+                </Link>
+              </li>
+              {parent ? (
+                <Fragment key={`parent-${parent.id}`}>
+                  <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+                  <li>
+                    <Link
+                      href={`/categories/${parent.slug}`}
+                      className="transition hover:text-emerald-700"
+                    >
+                      {parent.name}
+                    </Link>
+                  </li>
+                </Fragment>
+              ) : null}
+              <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+              <li aria-current="page" className="font-medium text-slate-700">
+                {category.name}
+              </li>
+            </ol>
+          </nav>
           <div className="mt-6 flex items-start gap-4">
             <span
               className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ${accent.tile}`}
