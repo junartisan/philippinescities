@@ -7,6 +7,7 @@ from datetime import timedelta
 from app.config import settings
 from app.database import SessionLocal
 from app.models import Business, User, utcnow
+from app.seed import seed_directory
 
 
 def login(client, email, password):
@@ -91,6 +92,17 @@ def test_category_hierarchy(client):
 
     assert client.delete(f"/api/categories/{child_id}", headers=headers).status_code == 204
     assert client.delete(f"/api/categories/{parent_id}", headers=headers).status_code == 204
+
+
+def test_seed_directory_does_not_restore_deleted_defaults(client):
+    headers = login(client, "admin@example.com", "adminpassword")
+    target = client.get("/api/categories/slug/tents-retailers").json()
+    assert client.delete(f"/api/categories/{target['id']}", headers=headers).status_code == 204
+
+    with SessionLocal() as db:
+        seed_directory(db)
+
+    assert client.get("/api/categories/slug/tents-retailers").status_code == 404
 
 
 def test_directory_flow(client):

@@ -309,11 +309,8 @@ def _ensure_category(
 
 
 def seed_directory(db: Session) -> None:
-    for name, description in DEFAULT_CATEGORIES:
-        exists = db.scalar(
-            select(Category.id).where(func.lower(Category.name) == name.lower())
-        )
-        if exists is None:
+    if db.scalar(select(Category.id).limit(1)) is None:
+        for name, description in DEFAULT_CATEGORIES:
             db.add(
                 Category(
                     name=name,
@@ -321,17 +318,14 @@ def seed_directory(db: Session) -> None:
                     description=description,
                 )
             )
-    for parent_name, description, children in CATEGORY_GROUPS:
-        parent = _ensure_category(db, parent_name, description)
-        for child_name in children:
-            _ensure_category(db, child_name, f"{child_name} in {parent_name}.", parent.id)
-    for name, description in DEFAULT_BLOG_CATEGORIES:
-        exists = db.scalar(
-            select(BlogCategory.id).where(
-                func.lower(BlogCategory.name) == name.lower()
-            )
-        )
-        if exists is None:
+        for parent_name, description, children in CATEGORY_GROUPS:
+            parent = _ensure_category(db, parent_name, description)
+            for child_name in children:
+                _ensure_category(
+                    db, child_name, f"{child_name} in {parent_name}.", parent.id
+                )
+    if db.scalar(select(BlogCategory.id).limit(1)) is None:
+        for name, description in DEFAULT_BLOG_CATEGORIES:
             db.add(
                 BlogCategory(
                     name=name,
@@ -339,14 +333,8 @@ def seed_directory(db: Session) -> None:
                     description=description,
                 )
             )
-    for name, province, region in DEFAULT_CITIES:
-        exists = db.scalar(
-            select(City.id).where(
-                func.lower(City.name) == name.lower(),
-                func.coalesce(func.lower(City.province), "") == province.lower(),
-            )
-        )
-        if exists is None:
+    if db.scalar(select(City.id).limit(1)) is None:
+        for name, province, region in DEFAULT_CITIES:
             db.add(
                 City(
                     name=name,
