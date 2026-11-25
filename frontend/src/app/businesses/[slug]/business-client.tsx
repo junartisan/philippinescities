@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
-  ArrowLeft,
   CalendarDays,
   CheckCircle2,
   ChevronRight,
@@ -112,13 +111,46 @@ export default function BusinessDetailPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <Link
-        href="/businesses"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition hover:text-emerald-700"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to directory
-      </Link>
+      <nav aria-label="Breadcrumb">
+        <ol className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+          <li>
+            <Link href="/" className="transition hover:text-emerald-700">
+              Home
+            </Link>
+          </li>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <li>
+            <Link
+              href="/businesses"
+              className="transition hover:text-emerald-700"
+            >
+              Business Directory
+            </Link>
+          </li>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <li>
+            <Link
+              href={`/businesses?city_id=${business.city.id}`}
+              className="transition hover:text-emerald-700"
+            >
+              {business.city.name}
+            </Link>
+          </li>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <li>
+            <Link
+              href={`/businesses?city_id=${business.city.id}&category_id=${business.category.id}`}
+              className="transition hover:text-emerald-700"
+            >
+              {business.category.name}
+            </Link>
+          </li>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <li aria-current="page" className="font-medium text-slate-700">
+            {business.name}
+          </li>
+        </ol>
+      </nav>
 
       {business.lineage.length > 1 ? (
         <nav
