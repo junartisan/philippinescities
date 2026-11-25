@@ -1,5 +1,7 @@
+import csv
 import hashlib
 import hmac
+import io
 import json
 import time
 from datetime import timedelta
@@ -103,6 +105,85 @@ def test_seed_directory_does_not_restore_deleted_defaults(client):
         seed_directory(db)
 
     assert client.get("/api/categories/slug/tents-retailers").status_code == 404
+
+
+def test_admin_business_csv_import_export(client):
+    headers = login(client, "admin@example.com", "adminpassword")
+    category = client.get("/api/categories").json()[0]
+    city = client.get("/api/cities").json()[0]
+
+    template = client.get("/api/admin/businesses/csv-template", headers=headers)
+    assert template.status_code == 200, template.text
+    assert "category_slug" in template.text
+    assert client.get("/api/admin/businesses/csv-template").status_code == 401
+
+    created = client.post(
+        "/api/admin/businesses",
+        headers=headers,
+        json={
+            "name": "CSV Original Listing",
+            "category_id": category["id"],
+            "city_id": city["id"],
+            "phone": "09170000000",
+        },
+    )
+    assert created.status_code == 201, created.text
+    original = created.json()
+
+    exported = client.get("/api/admin/businesses/export", headers=headers)
+    assert exported.status_code == 200, exported.text
+    exported_rows = list(csv.DictReader(io.StringIO(exported.text.lstrip("\ufeff"))))
+    assert any(row["id"] == str(original["id"]) for row in exported_rows)
+
+    csv_text = (
+        "name,slug,category_slug,city_slug,phone,status\n"
+        f"CSV Original Listing,{original['slug']},{category['slug']},{city['slug']},09171234567,approved\n"
+        f"CSV Imported Branch,csv-imported-branch,{category['slug']},{city['slug']},09181234567,approved\n"
+    )
+    imported = client.post(
+        "/api/admin/businesses/import",
+        headers=headers,
+        files={"file": ("businesses.csv", csv_text, "text/csv")},
+    )
+    assert imported.status_code == 200, imported.text
+    assert imported.json() == {"rows": 2, "created": 1, "updated": 1, "errors": []}
+
+    branch = client.get("/api/businesses/slug/csv-imported-branch")
+    assert branch.status_code == 200, branch.text
+    branch_data = branch.json()
+    assert branch_data["phone"] == "09181234567"
+    original_detail = client.get(f"/api/businesses/slug/{original['slug']}")
+    assert original_detail.json()["phone"] == "09171234567"
+
+    invalid_text = (
+        "name,slug,category_slug,city_slug\n"
+        "CSV Broken Listing,csv-broken-listing,missing-category,missing-city\n"
+    )
+    invalid = client.post(
+        "/api/admin/businesses/import",
+        headers=headers,
+        files={"file": ("invalid.csv", invalid_text, "text/csv")},
+    )
+    assert invalid.status_code == 200, invalid.text
+    result = invalid.json()
+    assert result["created"] == 0
+    assert result["updated"] == 0
+    assert any("Row 2" in message for message in result["errors"])
+    assert client.get("/api/businesses/slug/csv-broken-listing").status_code == 404
+
+    owner = register(client, "csv-viewer@example.com", "CSV Viewer")
+    viewer_headers = login(client, owner["email"], "password123")
+    assert (
+        client.get("/api/admin/businesses/export", headers=viewer_headers).status_code
+        == 403
+    )
+
+    with SessionLocal() as db:
+        for business_id in (original["id"], branch_data["id"]):
+            business = db.get(Business, business_id)
+            if business is not None:
+                db.delete(business)
+        db.commit()
 
 
 def test_directory_flow(client):

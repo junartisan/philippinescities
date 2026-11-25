@@ -1,16 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 import {
   ArrowRight,
   Check,
   CreditCard,
+  Download,
   Search,
   Store,
+  Upload,
   X,
 } from "lucide-react";
-import { api, errorMessage } from "@/lib/api";
+import { API_URL, api, errorMessage, getToken } from "@/lib/api";
 import { useAuth } from "@/components/auth-provider";
 import {
   Alert,
@@ -26,7 +34,11 @@ import {
   textareaClass,
 } from "@/components/ui";
 import { cn, formatDate } from "@/lib/utils";
-import type { BusinessList, BusinessStatus } from "@/lib/types";
+import type {
+  BusinessCsvImportOut,
+  BusinessList,
+  BusinessStatus,
+} from "@/lib/types";
 
 type StatusFilter = BusinessStatus | "all";
 
@@ -51,6 +63,11 @@ export default function AdminBusinessesPage() {
   const [busyId, setBusyId] = useState<number | null>(null);
   const [rejectId, setRejectId] = useState<number | null>(null);
   const [reason, setReason] = useState("");
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [csvBusy, setCsvBusy] = useState<"export" | "template" | "import" | null>(
+    null,
+  );
+  const [importErrors, setImportErrors] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -86,6 +103,107 @@ export default function AdminBusinessesPage() {
     event.preventDefault();
     setAppliedSearch(search.trim());
     setPage(1);
+  }
+
+  async function downloadCsv(path: string, filename: string) {
+    const headers: Record<string, string> = { Accept: "text/csv" };
+    const token = getToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    const response = await fetch(`${API_URL}${path}`, {
+      headers,
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      let detail = `Unable to download ${filename}.`;
+      try {
+        const data = (await response.json()) as { detail?: unknown };
+        if (typeof data.detail === "string") detail = data.detail;
+      } catch {
+        detail = `Unable to download ${filename}.`;
+      }
+      throw new Error(detail);
+    }
+
+    const url = URL.createObjectURL(await response.blob());
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  async function exportCsv() {
+    setError("");
+    setNotice("");
+    setImportErrors([]);
+    setCsvBusy("export");
+    try {
+      await downloadCsv("/api/admin/businesses/export", "businesses.csv");
+      setNotice("CSV export downloaded.");
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setCsvBusy(null);
+    }
+  }
+
+  async function downloadTemplate() {
+    setError("");
+    setNotice("");
+    setImportErrors([]);
+    setCsvBusy("template");
+    try {
+      await downloadCsv(
+        "/api/admin/businesses/csv-template",
+        "businesses-template.csv",
+      );
+      setNotice("CSV template downloaded.");
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setCsvBusy(null);
+    }
+  }
+
+  async function importCsv(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!csvFile) return;
+
+    setError("");
+    setNotice("");
+    setImportErrors([]);
+    setCsvBusy("import");
+    try {
+      const formData = new FormData();
+      formData.append("file", csvFile);
+      const result = await api<BusinessCsvImportOut>(
+        "/api/admin/businesses/import",
+        { method: "POST", formData },
+      );
+      setImportErrors(result.errors);
+      if (result.errors.length > 0) {
+        setError(
+          `${result.rows} row(s) checked. No changes were imported; fix the errors below and try again.`,
+        );
+        return;
+      }
+      setNotice(
+        `Imported ${result.created} new listing(s) and updated ${result.updated} listing(s).`,
+      );
+      setCsvFile(null);
+      const input = document.getElementById(
+        "business-csv-file",
+      ) as HTMLInputElement | null;
+      if (input) input.value = "";
+      await load();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setCsvBusy(null);
+    }
   }
 
   async function approve(id: number) {
@@ -130,6 +248,95 @@ export default function AdminBusinessesPage() {
           note for the owner.
         </p>
       </div>
+
+      {isAdmin ? (
+        <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">
+                CSV import and export
+              </h3>
+              <p className="mt-1 max-w-3xl text-xs text-slate-500">
+                Export all listings with category, city, branch, and status
+                columns. Rows with an existing ID or slug are updated; other
+                rows are created as approved listings. Every row is validated
+                before any changes are saved.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={downloadTemplate}
+                disabled={csvBusy !== null}
+                className={buttonClass("secondary", "sm")}
+              >
+                {csvBusy === "template" ? (
+                  <Spinner className="h-3.5 w-3.5" />
+                ) : (
+                  <Download className="h-3.5 w-3.5" />
+                )}
+                Template
+              </button>
+              <button
+                type="button"
+                onClick={exportCsv}
+                disabled={csvBusy !== null}
+                className={buttonClass("primary", "sm")}
+              >
+                {csvBusy === "export" ? (
+                  <Spinner className="h-3.5 w-3.5" />
+                ) : (
+                  <Download className="h-3.5 w-3.5" />
+                )}
+                Export CSV
+              </button>
+            </div>
+          </div>
+
+          <form
+            onSubmit={importCsv}
+            className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-end"
+          >
+            <div className="flex-1">
+              <label
+                htmlFor="business-csv-file"
+                className="text-xs font-medium text-slate-600"
+              >
+                Import CSV file
+              </label>
+              <input
+                id="business-csv-file"
+                type="file"
+                accept=".csv,text/csv"
+                onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                  setCsvFile(event.target.files?.[0] ?? null)
+                }
+                className={cn(inputClass, "mt-1 py-2 text-xs")}
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={!csvFile || csvBusy !== null}
+              className={buttonClass("secondary", "sm")}
+            >
+              {csvBusy === "import" ? (
+                <Spinner className="h-3.5 w-3.5" />
+              ) : (
+                <Upload className="h-3.5 w-3.5" />
+              )}
+              Import CSV
+            </button>
+          </form>
+
+          {importErrors.length > 0 ? (
+            <ul className="mt-3 space-y-1 rounded-xl bg-rose-50 p-3 text-xs text-rose-700">
+              {importErrors.map((message, index) => (
+                <li key={`${index}-${message}`}>{message}</li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="flex flex-wrap gap-1.5">
         {tabs.map((tab) => (

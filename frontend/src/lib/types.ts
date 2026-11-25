@@ -135,6 +135,13 @@ export interface BusinessList {
   pages: number;
 }
 
+export interface BusinessCsvImportOut {
+  rows: number;
+  created: number;
+  updated: number;
+  errors: string[];
+}
+
 export interface BusinessTeamMember {
   id: number;
   business_id: number;

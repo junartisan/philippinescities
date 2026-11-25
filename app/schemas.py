@@ -233,6 +233,13 @@ class BusinessList(BaseModel):
     pages: int
 
 
+class BusinessCsvImportOut(BaseModel):
+    rows: int
+    created: int
+    updated: int
+    errors: list[str] = Field(default_factory=list)
+
+
 class BusinessTeamMemberOut(ORMModel):
     id: int
     business_id: int

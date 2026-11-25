@@ -1,6 +1,9 @@
+import csv
+import io
 from datetime import timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile, status
+from pydantic import ValidationError
 from sqlalchemy import func, or_, select, update
 from sqlalchemy.orm import Session, joinedload, selectinload
 
@@ -44,10 +47,12 @@ from app.schemas import (
     BusinessBrief,
     BusinessCreate,
     BusinessList,
+    BusinessUpdate,
     BusinessOut,
     BlogContributorCitiesUpdate,
     BlogContributorDecision,
     BlogContributorOut,
+    BusinessCsvImportOut,
     BusinessReject,
     BusinessVerificationDecision,
     BusinessVerificationOut,
@@ -72,12 +77,174 @@ from app.schemas import (
 from app.utils import (
     plain_text_length,
     sanitize_post_body,
+    slugify,
     unique_slug,
     validate_business_parent,
     validate_city_post_parent,
 )
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
+
+BUSINESS_CSV_HEADERS = [
+    "id",
+    "name",
+    "slug",
+    "description",
+    "address",
+    "phone",
+    "email",
+    "website",
+    "logo_url",
+    "status",
+    "category_id",
+    "category_slug",
+    "category_name",
+    "city_id",
+    "city_slug",
+    "city_name",
+    "parent_id",
+    "parent_slug",
+    "parent_name",
+    "hours",
+    "promo_headline",
+    "promo_details",
+    "created_at",
+    "updated_at",
+]
+BUSINESS_CSV_TEXT_FIELDS = (
+    "description",
+    "address",
+    "phone",
+    "email",
+    "website",
+    "logo_url",
+    "hours",
+    "promo_headline",
+    "promo_details",
+)
+MAX_BUSINESS_CSV_BYTES = 5 * 1024 * 1024
+MAX_BUSINESS_CSV_ROWS = 2000
+_CSV_FORMULA_PREFIXES = ("=", "+", "-", "@")
+
+
+def _csv_safe(value: object) -> str:
+    text = "" if value is None else str(value)
+    if text.startswith(_CSV_FORMULA_PREFIXES):
+        return f"'{text}"
+    return text
+
+
+def _csv_datetime(value) -> str:
+    return value.isoformat() if value is not None else ""
+
+
+def _csv_optional(value: str | None) -> str | None:
+    return value if value else None
+
+
+def _normalize_csv_row(row: dict) -> dict[str, str]:
+    normalized: dict[str, str] = {}
+    for key, value in row.items():
+        if not key:
+            continue
+        text = value if isinstance(value, str) else "" if value is None else str(value)
+        normalized[key.strip().lower()] = text.strip()
+    return normalized
+
+
+def _parse_csv_int(raw: str | None, label: str) -> tuple[int | None, str | None]:
+    if not raw:
+        return None, None
+    try:
+        value = int(raw)
+    except ValueError:
+        return None, f"Invalid {label}: {raw}"
+    if value < 1:
+        return None, f"Invalid {label}: {raw}"
+    return value, None
+
+
+def _parse_csv_status(raw: str | None) -> tuple[BusinessStatus | None, str | None]:
+    if not raw:
+        return None, None
+    try:
+        return BusinessStatus(raw.strip().lower()), None
+    except ValueError:
+        return None, f"Invalid status: {raw}"
+
+
+def _validation_error(exc: ValidationError) -> str:
+    messages = []
+    for error in exc.errors():
+        location = ".".join(str(part) for part in error.get("loc", ()))
+        message = str(error.get("msg", "Invalid value"))
+        messages.append(f"{location}: {message}" if location else message)
+    return "; ".join(messages) or "Invalid value"
+
+
+def _resolve_csv_reference(db: Session, model, values: dict[str, str], prefix: str, label: str):
+    reference_id, error = _parse_csv_int(values.get(f"{prefix}_id"), f"{label} ID")
+    if error:
+        return None, error
+    if reference_id is not None:
+        if db.get(model, reference_id) is None:
+            return None, f"Invalid {label} ID: {reference_id}"
+        return reference_id, None
+
+    slug = values.get(f"{prefix}_slug")
+    if slug:
+        candidate = slugify(slug)
+        resolved_id = db.scalar(select(model.id).where(model.slug == candidate))
+        if resolved_id is None:
+            return None, f"Invalid {label} slug: {slug}"
+        return resolved_id, None
+
+    name = values.get(f"{prefix}_name")
+    if name:
+        resolved_id = db.scalar(
+            select(model.id).where(func.lower(model.name) == name.lower())
+        )
+        if resolved_id is None:
+            return None, f"Invalid {label} name: {name}"
+        return resolved_id, None
+
+    return None, None
+
+
+def _business_csv_content(db: Session) -> bytes:
+    rows = db.execute(business_query().order_by(Business.id)).unique().all()
+    parent_slugs = dict(db.execute(select(Business.id, Business.slug)).all())
+    parent_names = dict(db.execute(select(Business.id, Business.name)).all())
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=BUSINESS_CSV_HEADERS)
+    writer.writeheader()
+    for business, _average_rating, _review_count in rows:
+        writer.writerow(
+            {
+                "id": business.id,
+                "name": _csv_safe(business.name),
+                "slug": _csv_safe(business.slug),
+                "description": _csv_safe(business.description),
+                "address": _csv_safe(business.address),
+                "phone": _csv_safe(business.phone),
+                "email": _csv_safe(business.email),
+                "website": _csv_safe(business.website),
+                "logo_url": _csv_safe(business.logo_url),
+                "status": getattr(business.status, "value", str(business.status)),
+                "category_id": business.category_id,
+                "category_slug": _csv_safe(business.category.slug),
+                "category_name": _csv_safe(business.category.name),
+                "city_id": business.city_id,
+                "city_slug": _csv_safe(business.city.slug),
+                "city_name": _csv_safe(business.city.name),
+                "parent_id": business.parent_id or "",
+                "parent_slug": _csv_safe(parent_slugs.get(business.parent_id)),
+                "parent_name": _csv_safe(parent_names.get(business.parent_id)),
+                "created_at": _csv_datetime(business.created_at),
+                "updated_at": _csv_datetime(business.updated_at),
+            }
+        )
+    return output.getvalue().encode("utf-8-sig")
 
 
 def _load_manual_payment(db: Session, payment_id: int) -> ManualPayment:
@@ -307,6 +474,249 @@ def list_all_businesses(
 
     stmt = business_query().where(*filters).order_by(Business.created_at.desc())
     return paginate_businesses(db, stmt, filters, page, page_size)
+
+
+@router.get("/businesses/export")
+def export_businesses_csv(
+    _: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    content = _business_csv_content(db)
+    return Response(
+        content=content,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="businesses.csv"'},
+    )
+
+
+@router.get("/businesses/csv-template")
+def business_csv_template(_: User = Depends(get_current_admin)):
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=BUSINESS_CSV_HEADERS)
+    writer.writeheader()
+    return Response(
+        content=output.getvalue().encode("utf-8-sig"),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="businesses-template.csv"'
+        },
+    )
+
+
+@router.post("/businesses/import", response_model=BusinessCsvImportOut)
+async def import_businesses_csv(
+    file: UploadFile = File(...),
+    admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    raw = await file.read(MAX_BUSINESS_CSV_BYTES + 1)
+    if len(raw) > MAX_BUSINESS_CSV_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"CSV file must be {MAX_BUSINESS_CSV_BYTES // 1024 // 1024} MB or smaller",
+        )
+    if not raw.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="CSV file is empty",
+        )
+    try:
+        text = raw.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="CSV file must be UTF-8 encoded",
+        )
+
+    reader = csv.DictReader(io.StringIO(text))
+    if not reader.fieldnames:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="CSV file must include a header row",
+        )
+    present = {name.strip().lower() for name in reader.fieldnames if name}
+    records: list[tuple[int, dict[str, str]]] = []
+    for row_number, row in enumerate(reader, start=2):
+        values = _normalize_csv_row(row)
+        if any(values.values()):
+            records.append((row_number, values))
+    if not records:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="CSV file has no data rows",
+        )
+    if len(records) > MAX_BUSINESS_CSV_ROWS:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"CSV file may contain at most {MAX_BUSINESS_CSV_ROWS} listings",
+        )
+
+    category_headers = {"category_id", "category_slug", "category_name"}
+    city_headers = {"city_id", "city_slug", "city_name"}
+    parent_headers = {"parent_id", "parent_slug", "parent_name"}
+    used_slugs = set(db.scalars(select(Business.slug)).all())
+    planned_slugs: set[str] = set()
+    errors: list[str] = []
+    actions: list[tuple[Business | None, BusinessCreate | BusinessUpdate, str | None, BusinessStatus | None, bool]] = []
+
+    for row_number, values in records:
+        row_errors: list[str] = []
+        business_id, error = _parse_csv_int(values.get("id"), "Business ID")
+        if error:
+            row_errors.append(error)
+
+        business: Business | None = None
+        if business_id is not None:
+            business = db.get(Business, business_id)
+            if business is None:
+                row_errors.append(f"Business ID {business_id} was not found")
+        elif values.get("slug"):
+            candidate_slug = slugify(values["slug"])
+            business = db.scalar(select(Business).where(Business.slug == candidate_slug))
+
+        name = values.get("name")
+        if business is None and not name:
+            row_errors.append("Name is required")
+
+        category_id, error = _resolve_csv_reference(
+            db, Category, values, "category", "category"
+        )
+        if error:
+            row_errors.append(error)
+        elif category_id is None and (business is None or category_headers & present):
+            row_errors.append("Category is required")
+
+        city_id, error = _resolve_csv_reference(db, City, values, "city", "city")
+        if error:
+            row_errors.append(error)
+        elif city_id is None and (business is None or city_headers & present):
+            row_errors.append("City is required")
+
+        parent_id, error = _resolve_csv_reference(
+            db, Business, values, "parent", "parent"
+        )
+        if error:
+            row_errors.append(error)
+        elif not parent_headers & present and business is not None:
+            parent_id = business.parent_id
+        parent_error = validate_business_parent(
+            db, business.id if business is not None else None, parent_id
+        )
+        if parent_error:
+            row_errors.append(parent_error)
+
+        desired_status: BusinessStatus | None = None
+        if "status" in present:
+            desired_status, error = _parse_csv_status(values.get("status"))
+            if error:
+                row_errors.append(error)
+
+        desired_slug: str | None = None
+        if "slug" in present and values.get("slug"):
+            candidate_slug = slugify(values["slug"])
+            if candidate_slug in used_slugs and (
+                business is None or candidate_slug != business.slug
+            ):
+                row_errors.append(f"Slug already in use: {candidate_slug}")
+            elif candidate_slug in planned_slugs and (
+                business is None or candidate_slug != business.slug
+            ):
+                row_errors.append(f"Duplicate slug in CSV: {candidate_slug}")
+            else:
+                desired_slug = candidate_slug
+        elif business is None:
+            base_slug = slugify(name or "business")
+            candidate_slug = base_slug
+            counter = 2
+            while candidate_slug in used_slugs or candidate_slug in planned_slugs:
+                candidate_slug = f"{base_slug}-{counter}"
+                counter += 1
+            desired_slug = candidate_slug
+        if desired_slug:
+            planned_slugs.add(desired_slug)
+
+        is_create = business is None
+        fields: dict[str, object] = {}
+        if is_create:
+            fields.update(
+                {
+                    "name": name,
+                    "category_id": category_id,
+                    "city_id": city_id,
+                    "parent_id": parent_id,
+                }
+            )
+            for field in BUSINESS_CSV_TEXT_FIELDS:
+                if field in present:
+                    fields[field] = _csv_optional(values.get(field))
+        else:
+            if "name" in present and name:
+                fields["name"] = name
+            for field in BUSINESS_CSV_TEXT_FIELDS:
+                if field in present:
+                    fields[field] = _csv_optional(values.get(field))
+            if category_headers & present:
+                fields["category_id"] = category_id
+            if city_headers & present:
+                fields["city_id"] = city_id
+            if parent_headers & present:
+                fields["parent_id"] = parent_id
+
+        payload: BusinessCreate | BusinessUpdate | None = None
+        try:
+            payload = BusinessCreate(**fields) if is_create else BusinessUpdate(**fields)
+        except ValidationError as exc:
+            row_errors.append(_validation_error(exc))
+
+        if row_errors:
+            errors.extend(f"Row {row_number}: {message}" for message in row_errors)
+            continue
+        assert payload is not None
+        actions.append((business, payload, desired_slug, desired_status, is_create))
+
+    if errors:
+        return BusinessCsvImportOut(
+            rows=len(records),
+            created=0,
+            updated=0,
+            errors=errors,
+        )
+
+    created = 0
+    updated = 0
+    try:
+        for business, payload, desired_slug, desired_status, is_create in actions:
+            if is_create:
+                business = Business(
+                    **payload.model_dump(),
+                    owner_id=None,
+                    created_by_id=admin.id,
+                    status=desired_status or BusinessStatus.approved,
+                )
+                created += 1
+            else:
+                assert business is not None
+                for field, value in payload.model_dump(exclude_unset=True).items():
+                    setattr(business, field, value)
+                updated += 1
+            if desired_slug:
+                business.slug = desired_slug
+            if desired_status is not None:
+                business.status = desired_status
+            if business.status == BusinessStatus.approved:
+                business.rejection_reason = None
+            db.add(business)
+            db.flush()
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
+    return BusinessCsvImportOut(
+        rows=len(records),
+        created=created,
+        updated=updated,
+    )
 
 
 @router.post("/businesses", response_model=BusinessOut, status_code=status.HTTP_201_CREATED)
