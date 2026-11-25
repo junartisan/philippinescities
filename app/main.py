@@ -29,6 +29,9 @@ from app.seed import bootstrap_admin, seed_directory
 
 Base.metadata.create_all(bind=engine)
 ensure_schema(engine)
+with SessionLocal() as db:
+    seed_directory(db)
+    bootstrap_admin(db)
 
 
 @asynccontextmanager
