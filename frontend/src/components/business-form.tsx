@@ -352,11 +352,31 @@ export function BusinessForm({ business }: { business?: Business }) {
                 <option value="">
                   {optionsLoading ? "Loading categories…" : "Select a category"}
                 </option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
+                {categories
+                  .filter((category) => category.parent_id === null)
+                  .map((parent) => (
+                    <optgroup key={parent.id} label={parent.name}>
+                      <option value={parent.id}>{parent.name} - all</option>
+                      {categories
+                        .filter((child) => child.parent_id === parent.id)
+                        .map((child) => (
+                          <option key={child.id} value={child.id}>
+                            {child.name}
+                          </option>
+                        ))}
+                    </optgroup>
+                  ))}
+                {categories
+                  .filter(
+                    (category) =>
+                      category.parent_id !== null &&
+                      !categories.some((item) => item.id === category.parent_id),
+                  )
+                  .map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
               </select>
             </Field>
           ) : null}

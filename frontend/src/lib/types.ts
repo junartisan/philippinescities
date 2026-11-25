@@ -59,6 +59,9 @@ export interface Category {
   name: string;
   slug: string;
   description: string | null;
+  parent_id: number | null;
+  business_count: number;
+  child_count: number;
   created_at: string;
   updated_at: string;
 }

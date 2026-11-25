@@ -52,6 +52,47 @@ def test_slug_lookup_endpoints(client):
         assert missing.status_code == 404
 
 
+def test_category_hierarchy(client):
+    headers = login(client, "admin@example.com", "adminpassword")
+    parent_response = client.post(
+        "/api/categories",
+        headers=headers,
+        json={"name": "Hierarchy Test Parent", "description": "Parent category"},
+    )
+    assert parent_response.status_code == 201, parent_response.text
+    parent_id = parent_response.json()["id"]
+
+    child_response = client.post(
+        "/api/categories",
+        headers=headers,
+        json={"name": "Hierarchy Test Child", "parent_id": parent_id},
+    )
+    assert child_response.status_code == 201, child_response.text
+    child_id = child_response.json()["id"]
+
+    nested_response = client.post(
+        "/api/categories",
+        headers=headers,
+        json={"name": "Hierarchy Test Nested", "parent_id": child_id},
+    )
+    assert nested_response.status_code == 400
+    assert nested_response.json()["detail"] == (
+        "Categories support one level of subcategories only"
+    )
+
+    categories = client.get("/api/categories").json()
+    parent = next(item for item in categories if item["id"] == parent_id)
+    child = next(item for item in categories if item["id"] == child_id)
+    assert parent["child_count"] == 1
+    assert child["parent_id"] == parent_id
+
+    by_slug = client.get("/api/categories/slug/hierarchy-test-child").json()
+    assert by_slug["id"] == child_id
+
+    assert client.delete(f"/api/categories/{child_id}", headers=headers).status_code == 204
+    assert client.delete(f"/api/categories/{parent_id}", headers=headers).status_code == 204
+
+
 def test_directory_flow(client):
     categories = client.get("/api/categories").json()
     cities = client.get("/api/cities").json()

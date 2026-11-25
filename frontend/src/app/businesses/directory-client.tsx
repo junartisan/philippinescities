@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import { RotateCcw, Search, Store } from "lucide-react";
@@ -152,11 +153,31 @@ export function DirectoryClient() {
               }
             >
               <option value="">All categories</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
+              {categories
+                .filter((category) => category.parent_id === null)
+                .map((parent) => (
+                  <optgroup key={parent.id} label={parent.name}>
+                    <option value={parent.id}>{parent.name} - all</option>
+                    {categories
+                      .filter((child) => child.parent_id === parent.id)
+                      .map((child) => (
+                        <option key={child.id} value={child.id}>
+                          {child.name}
+                        </option>
+                      ))}
+                  </optgroup>
+                ))}
+              {categories
+                .filter(
+                  (category) =>
+                    category.parent_id !== null &&
+                    !categories.some((item) => item.id === category.parent_id),
+                )
+                .map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
             </select>
             <select
               aria-label="Filter by city"
@@ -199,6 +220,26 @@ export function DirectoryClient() {
             </div>
           ) : null}
         </form>
+
+        {!loading ? (
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              Browse:
+            </span>
+            {categories
+              .filter((category) => category.parent_id === null)
+              .slice(0, 12)
+              .map((category) => (
+                <Link
+                  key={category.id}
+                  href={`/businesses?category_id=${category.id}`}
+                  className="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-emerald-200 hover:text-emerald-700"
+                >
+                  {category.name}
+                </Link>
+              ))}
+          </div>
+        ) : null}
 
         {error ? (
           <div className="mt-6">

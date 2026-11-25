@@ -162,7 +162,11 @@ def list_businesses(
     if city_id is not None:
         filters.append(Business.city_id == city_id)
     if category_id is not None:
-        filters.append(Business.category_id == category_id)
+        category_ids = [category_id]
+        category_ids.extend(
+            db.scalars(select(Category.id).where(Category.parent_id == category_id)).all()
+        )
+        filters.append(Business.category_id.in_(category_ids))
     if brand_id is not None:
         filters.append(Business.parent_id == brand_id)
     if search and search.strip():

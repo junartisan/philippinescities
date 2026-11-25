@@ -1,13 +1,18 @@
 import {
+  Banknote,
   BedDouble,
   Briefcase,
   Building2,
   Car,
+  Church,
   Cpu,
   Dumbbell,
   GraduationCap,
   HeartPulse,
+  Landmark,
+  Plane,
   ShoppingBag,
+  Ship,
   Sparkles,
   Store,
   Ticket,
@@ -17,6 +22,21 @@ import {
 } from "lucide-react";
 
 function iconFor(slug: string, className?: string) {
+  if (slug.includes("banking") || slug.includes("finance")) {
+    return <Banknote className={className} aria-hidden="true" />;
+  }
+  if (slug.includes("government") || slug.includes("community")) {
+    return <Landmark className={className} aria-hidden="true" />;
+  }
+  if (slug.includes("religion") || slug.includes("ngo")) {
+    return <Church className={className} aria-hidden="true" />;
+  }
+  if (slug.includes("shipping") || slug.includes("travel")) {
+    return <Ship className={className} aria-hidden="true" />;
+  }
+  if (slug.includes("transportation") || slug.includes("aviation")) {
+    return <Plane className={className} aria-hidden="true" />;
+  }
   if (slug.includes("restaurant") || slug.includes("cafe")) {
     return <UtensilsCrossed className={className} aria-hidden="true" />;
   }

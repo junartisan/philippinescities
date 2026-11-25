@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowLeft, MapPin, Shapes } from "lucide-react";
+import { ArrowLeft, ArrowRight, MapPin, Shapes } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { AdSlot } from "@/components/adsense";
 import { BusinessCard } from "@/components/business-card";
@@ -21,6 +21,8 @@ export default function CategoryDetailPage() {
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
   const [category, setCategory] = useState<Category | null>(null);
+  const [parent, setParent] = useState<Category | null>(null);
+  const [children, setChildren] = useState<Category[]>([]);
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -35,11 +37,22 @@ export default function CategoryDetailPage() {
         const detail = await api<Category>(
           `/api/categories/slug/${encodeURIComponent(slug)}`,
         );
-        const list = await api<BusinessList>(
-          `/api/businesses?category_id=${detail.id}&page_size=12`,
-        );
+        const [list, allCategories] = await Promise.all([
+          api<BusinessList>(
+            `/api/businesses?category_id=${detail.id}&page_size=12`,
+          ),
+          api<Category[]>("/api/categories"),
+        ]);
         if (!active) return;
         setCategory(detail);
+        setParent(
+          detail.parent_id
+            ? allCategories.find((item) => item.id === detail.parent_id) ?? null
+            : null,
+        );
+        setChildren(
+          allCategories.filter((item) => item.parent_id === detail.id),
+        );
         setBusinesses(list.items);
         setError("");
       } catch (err) {
@@ -87,6 +100,15 @@ export default function CategoryDetailPage() {
             <ArrowLeft className="h-4 w-4" />
             All categories
           </Link>
+          {parent ? (
+            <Link
+              href={`/categories/${parent.slug}`}
+              className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-emerald-700"
+            >
+              {parent.name}
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          ) : null}
           <div className="mt-6 flex items-start gap-4">
             <span
               className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ${accent.tile}`}
@@ -107,6 +129,26 @@ export default function CategoryDetailPage() {
       </section>
 
       <section className="mx-auto max-w-6xl px-4 py-10">
+        {children.length > 0 ? (
+          <div className="mb-10">
+            <h2 className="text-lg font-semibold text-slate-900">
+              Subcategories
+            </h2>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {children.map((child) => (
+                <Link
+                  key={child.id}
+                  href={`/categories/${child.slug}`}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:border-emerald-200 hover:text-emerald-700"
+                >
+                  {child.name}
+                  <ArrowRight className="h-3 w-3" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold tracking-tight text-slate-900">

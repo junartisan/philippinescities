@@ -25,6 +25,234 @@ DEFAULT_CATEGORIES = [
     ("Home Services", "Contractors, cleaning, and repair services"),
 ]
 
+CATEGORY_GROUPS = [
+    (
+        "Accommodations and Hotels",
+        "Hotels, resorts, suites, hostels, guest houses, and inns.",
+        [
+            "Hotels",
+            "Resorts",
+            "Suites",
+            "Pension Houses",
+            "Hostels",
+            "Guest Houses and Inns",
+        ],
+    ),
+    (
+        "Automotive - Vehicles",
+        "Vehicle sales, rentals, parts, accessories, and maintenance services.",
+        [
+            "Automotive Maintenance",
+            "Bikes - Spare Parts & Accessories",
+            "Car & Automobile - Garage",
+            "Car & Automobile - Sales",
+            "Car Rentals",
+            "Motorbike Rentals",
+            "Car Accessories",
+            "Car Washing & Polishing Services",
+            "Gasoline Service Stations",
+            "Motorcycles - Sales",
+            "Motorcycles - Spare Parts & Accessories",
+        ],
+    ),
+    (
+        "Banking & Finance",
+        "Banks, money exchange, remittance, and traveller's cheque services.",
+        [
+            "Bank & Finance",
+            "Money Exchange",
+            "Money Transfer Services",
+            "Travellers' Cheques",
+        ],
+    ),
+    (
+        "Beauty",
+        "Salons, cosmetics, optical lenses, cosmetic surgery, and spas.",
+        [
+            "Beauty Salon Equipment & Supplies",
+            "Beauty Salons",
+            "Cosmetic Surgery",
+            "Cosmetics & Personal Care",
+            "Lenses - Optical",
+            "Saunas & Spas",
+        ],
+    ),
+    (
+        "Business & Companies",
+        "Professional, industrial, corporate, and general business services.",
+        [
+            "Accountants - General",
+            "Advertising - Internet",
+            "Advertising Agencies & Consultants",
+            "Agricultural Development",
+            "Architectural Services",
+            "Billboards - Design & Advertising",
+            "Cakes and Pastries",
+            "Call Centers and BPO",
+            "Commercial & Industrial Equipment",
+            "Computer Programming Consultants",
+            "Dive Centers",
+            "Engineering - Contractors & Consultants",
+            "Engineers - Civil",
+            "Engineers - Marine",
+            "Funeral Services",
+            "Gadgets & Electronics",
+            "Geographical Services",
+            "Hospitals",
+            "Internet Service Providers & Consultants",
+            "Investment Companies",
+            "Labor Contractors - Employment",
+            "Laundry & Dry Cleaners",
+            "Law Offices",
+            "Manufacturers",
+            "Water Suppliers",
+        ],
+    ),
+    (
+        "Education and Trainings",
+        "Schools, universities, training centers, and learning support services.",
+        [
+            "Accounting Classes & Training",
+            "Advertising (Google)",
+            "Computer Schools & Training",
+            "Graphic Design",
+            "Dive Centre",
+            "Driving Schools & Instructors",
+            "Health Education Centres",
+            "Kindergartens",
+            "Schools & Educational - Private",
+            "Schools & Educational - Public",
+            "Training Programs",
+            "Universities",
+            "Training Rooms",
+        ],
+    ),
+    (
+        "Entertainments",
+        "Nightlife, attractions, event venues, and recreational entertainment.",
+        [
+            "Bars & Pubs",
+            "Boat Excursions - Rental",
+            "Casino",
+            "Cinemas & Movie Centres",
+            "Conference Rooms & Organizers",
+            "Event Management",
+            "Golf - Clubs & Driving Ranges",
+            "Night Clubs",
+            "Shopping Centres",
+            "Swimming Pools",
+            "Video Games - Entertainment",
+        ],
+    ),
+    (
+        "Governments & Community",
+        "Government offices, public services, and community facilities.",
+        [
+            "Agricultural",
+            "City Fire Stations",
+            "City Health Department",
+            "City Police Stations",
+            "LTO",
+            "City Mayor Office",
+            "Dept. of Public Services",
+            "National Irrigation Administration",
+        ],
+    ),
+    (
+        "Health and Medicine",
+        "Medical specialists, clinics, hospitals, emergency care, and health services.",
+        [
+            "Allergist",
+            "Ambulance Service",
+            "Anesthesiologist",
+            "Aromatherapy",
+            "Audiologist",
+            "Blood Banks & Centres",
+            "Cardiologist",
+            "Clinics - Medical & General Practitioners",
+            "Counseling Services - Psychologists & Psychiatrists",
+            "Dental Clinics & Practitioners",
+            "Dermatologists",
+            "Diabetologist",
+            "Emergency - Medical",
+            "Endocrinologist",
+            "Evacuation & Repatriation - Medical",
+            "Family Practice Physician",
+            "Forensic Physician",
+            "Gastroenterologist",
+            "Gastrointestinal Surgeon",
+            "General Practitioner",
+        ],
+    ),
+    (
+        "Religion & NGO",
+        "Religious facilities, foundations, and non-government organizations.",
+        ["Buddhist Facilities", "Churches & Religions", "Foundations", "Temples"],
+    ),
+    (
+        "Restaurants and Bars",
+        "Restaurants, cafes, fast food, and dining by cuisine.",
+        [
+            "Asian Restaurants",
+            "BBQ Restaurants",
+            "Cafes & Coffee Shops",
+            "Chinese Restaurants",
+            "Fast Food",
+            "Filipino Restaurants",
+            "French Restaurants",
+            "German Restaurants",
+            "Greek Restaurants",
+            "Halal Restaurants",
+            "Italian Restaurants",
+            "Japanese Restaurants",
+            "Korean Restaurants",
+            "Malaysian Restaurants",
+            "Mediterranean Restaurants",
+            "Mexican Restaurants",
+        ],
+    ),
+    (
+        "Shipping, Transportation, Travel",
+        "Air, sea, land, courier, postal, and travel services.",
+        [
+            "Aircraft Charter & Rental Services",
+            "Airline Companies",
+            "Aviation - Civil Authority",
+            "Boat Transportation - Rental",
+            "Cargo - Transit",
+            "Container Depot",
+            "Courier Services",
+            "Port Authorities & Representatives",
+            "Ferry Boats",
+            "Postal Services",
+            "Shipping Line Services & Agencies",
+            "Travel Agencies",
+            "Visa Services",
+        ],
+    ),
+    (
+        "Shopping",
+        "Retail shops, markets, specialty stores, and wholesale suppliers.",
+        [
+            "Bags & Suitcases Retailers & Wholesalers",
+            "Cameras - Retail",
+            "Clothing Store",
+            "Computer - Equipment, Maintenance & Consultancy",
+            "Diamond - Wholesales & Retails",
+            "Drink Shops",
+            "Duty Free Shops",
+            "Flower Shop",
+            "Handicrafts",
+            "Hardware Stores",
+            "Lingerie & Underwear Wholesales & Retails",
+            "Markets - Shops",
+            "Perfumes",
+            "Tents - Retailers",
+            "Toys",
+        ],
+    ),
+]
+
 DEFAULT_BLOG_CATEGORIES = [
     ("Local news", "Updates and announcements from around the city"),
     ("City guides", "Practical guides for residents and visitors"),
@@ -57,6 +285,29 @@ DEFAULT_CITIES = [
 ]
 
 
+def _ensure_category(
+    db: Session,
+    name: str,
+    description: str,
+    parent_id: int | None = None,
+) -> Category:
+    category = db.scalar(
+        select(Category).where(func.lower(Category.name) == name.lower())
+    )
+    if category is None:
+        category = Category(
+            name=name,
+            slug=unique_slug(db, Category, name),
+            description=description,
+            parent_id=parent_id,
+        )
+        db.add(category)
+        db.flush()
+    elif parent_id is not None and category.parent_id is None:
+        category.parent_id = parent_id
+    return category
+
+
 def seed_directory(db: Session) -> None:
     for name, description in DEFAULT_CATEGORIES:
         exists = db.scalar(
@@ -70,6 +321,10 @@ def seed_directory(db: Session) -> None:
                     description=description,
                 )
             )
+    for parent_name, description, children in CATEGORY_GROUPS:
+        parent = _ensure_category(db, parent_name, description)
+        for child_name in children:
+            _ensure_category(db, child_name, f"{child_name} in {parent_name}.", parent.id)
     for name, description in DEFAULT_BLOG_CATEGORIES:
         exists = db.scalar(
             select(BlogCategory.id).where(

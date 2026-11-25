@@ -147,6 +147,28 @@ def ensure_schema(engine: Engine) -> None:
                         "FOREIGN KEY (parent_id) REFERENCES businesses(id) ON DELETE SET NULL"
                     )
 
+    if "categories" in inspector.get_table_names():
+        existing = {column["name"] for column in inspector.get_columns("categories")}
+        with engine.begin() as connection:
+            if "parent_id" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE categories ADD COLUMN parent_id INTEGER"
+                )
+            connection.exec_driver_sql(
+                "CREATE INDEX IF NOT EXISTS ix_categories_parent_id "
+                "ON categories (parent_id)"
+            )
+            if engine.dialect.name == "postgresql":
+                foreign_keys = {
+                    foreign_key["name"]
+                    for foreign_key in inspector.get_foreign_keys("categories")
+                }
+                if "fk_categories_parent_id" not in foreign_keys:
+                    connection.exec_driver_sql(
+                        "ALTER TABLE categories ADD CONSTRAINT fk_categories_parent_id "
+                        "FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE SET NULL"
+                    )
+
     if "city_posts" in inspector.get_table_names():
         existing = {column["name"] for column in inspector.get_columns("city_posts")}
         columns = {column["name"]: column for column in inspector.get_columns("city_posts")}

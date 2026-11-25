@@ -256,8 +256,23 @@ class Category(TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(100), unique=True, index=True, nullable=False)
     slug: Mapped[str] = mapped_column(String(120), unique=True, index=True, nullable=False)
     description: Mapped[str | None] = mapped_column(String(500))
+    parent_id: Mapped[int | None] = mapped_column(
+        ForeignKey("categories.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     businesses: Mapped[list[Business]] = relationship(back_populates="category")
+    parent: Mapped[Category | None] = relationship(
+        "Category",
+        remote_side=[id],
+        back_populates="children",
+    )
+    children: Mapped[list[Category]] = relationship(
+        "Category",
+        back_populates="parent",
+        cascade="all, delete-orphan",
+    )
 
 
 class City(TimestampMixin, Base):

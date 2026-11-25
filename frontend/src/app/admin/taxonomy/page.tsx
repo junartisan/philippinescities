@@ -11,11 +11,22 @@ import {
   Field,
   inputClass,
   PageLoader,
+  selectClass,
   Spinner,
 } from "@/components/ui";
 import type { BlogCategory, Category, City } from "@/lib/types";
 
-const emptyCategory = { name: "", description: "" };
+type CategoryFormState = {
+  name: string;
+  description: string;
+  parent_id: number | null;
+};
+
+const emptyCategory: CategoryFormState = {
+  name: "",
+  description: "",
+  parent_id: null,
+};
 const emptyBlogCategory = { name: "", description: "" };
 const emptyCity = { name: "", province: "", region: "" };
 
@@ -73,6 +84,7 @@ export default function AdminTaxonomyPage() {
           body: {
             name,
             description: categoryForm.description.trim() || null,
+            parent_id: categoryForm.parent_id,
           },
         },
       );
@@ -223,6 +235,7 @@ export default function AdminTaxonomyPage() {
     setCategoryForm({
       name: category.name,
       description: category.description ?? "",
+      parent_id: category.parent_id,
     });
     setError("");
   }
@@ -247,6 +260,13 @@ export default function AdminTaxonomyPage() {
   }
 
   if (loading) return <PageLoader label="Loading categories and cities…" />;
+
+  const parentOptions = categories.filter(
+    (category) =>
+      category.parent_id === null &&
+      category.id !== editingCategory?.id &&
+      (category.child_count === 0 || category.id === categoryForm.parent_id),
+  );
 
   return (
     <div className="space-y-6">
@@ -296,6 +316,28 @@ export default function AdminTaxonomyPage() {
                 required
                 minLength={2}
               />
+            </Field>
+            <Field label="Parent category" htmlFor="category-parent">
+              <select
+                id="category-parent"
+                className={selectClass}
+                value={categoryForm.parent_id ?? ""}
+                onChange={(event) =>
+                  setCategoryForm((previous) => ({
+                    ...previous,
+                    parent_id: event.target.value
+                      ? Number(event.target.value)
+                      : null,
+                  }))
+                }
+              >
+                <option value="">Top-level category</option>
+                {parentOptions.map((parent) => (
+                  <option key={parent.id} value={parent.id}>
+                    {parent.name}
+                  </option>
+                ))}
+              </select>
             </Field>
             <Field label="Description" htmlFor="category-description">
               <input
@@ -367,7 +409,7 @@ export default function AdminTaxonomyPage() {
                         {category.name}
                       </p>
                       <p className="truncate text-xs text-slate-400">
-                        /{category.slug}
+                        {category.parent_id ? "Subcategory · " : ""}/{category.slug}
                         {category.description
                           ? ` · ${category.description}`
                           : ""}
