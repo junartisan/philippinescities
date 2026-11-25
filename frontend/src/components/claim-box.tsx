@@ -75,7 +75,12 @@ export function ClaimBox({ business }: { business: Business }) {
 
   if (loading) return null;
 
-  const isOwner = Boolean(user && business.owner?.id === user.id);
+  const isOwner =
+    Boolean(user && business.owner?.id === user.id) ||
+    Boolean(business.my_role) ||
+    user?.role === "admin";
+  const canManageTeam =
+    business.my_role === "owner" || business.my_role === "corporate_admin";
   const loginHref = `/login?next=${encodeURIComponent(
     `/businesses/${business.slug}`,
   )}`;
@@ -90,7 +95,7 @@ export function ClaimBox({ business }: { business: Business }) {
         </h2>
       </div>
 
-      {isOwner || user?.role === "admin" ? (
+      {isOwner ? (
         <div className="mt-3 space-y-3">
           <p className="text-sm text-slate-500">
             Keep your details, contact information, and description up to date.
@@ -101,6 +106,14 @@ export function ClaimBox({ business }: { business: Business }) {
           >
             Edit listing
           </Link>
+          {canManageTeam ? (
+            <Link
+              href={`/dashboard/listings/${business.id}/team`}
+              className={buttonClass("secondary", "sm", "w-full")}
+            >
+              Manage team invitations
+            </Link>
+          ) : null}
         </div>
       ) : business.status !== "approved" ? (
         <p className="mt-3 text-sm text-slate-500">
@@ -112,6 +125,12 @@ export function ClaimBox({ business }: { business: Business }) {
             Own or manage this business? Request access and an admin will verify
             your claim before transferring ownership.
           </p>
+          {business.parent_id ? (
+            <p className="text-xs text-slate-500">
+              For a branch listing, accepting a brand invitation gives you
+              branch-level access without transferring brand ownership.
+            </p>
+          ) : null}
 
           {checking ? (
             <div className="flex items-center gap-2 text-xs text-slate-500">

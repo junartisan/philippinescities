@@ -1,5 +1,21 @@
 export type Role = "user" | "owner" | "contributor" | "editor" | "supervisor" | "admin";
 export type BusinessStatus = "pending" | "approved" | "rejected";
+export type BusinessTeamRole = "corporate_admin" | "branch_manager" | "staff";
+export type BusinessInvitationStatus =
+  | "pending"
+  | "accepted"
+  | "declined"
+  | "revoked"
+  | "expired";
+export type BusinessVerificationMethod =
+  | "registration"
+  | "domain_email"
+  | "branch_staff";
+export type BusinessVerificationStatus =
+  | "unverified"
+  | "pending"
+  | "verified"
+  | "rejected";
 export type ArticleAccessOverride = "approved" | "rejected";
 export type ClaimStatus = "pending" | "approved" | "rejected";
 export type ArticleType =
@@ -90,6 +106,15 @@ export interface Business {
   is_featured: boolean;
   featured_until: string | null;
   rejection_reason: string | null;
+  parent_id: number | null;
+  hours: string | null;
+  promo_headline: string | null;
+  promo_details: string | null;
+  verification_status: BusinessVerificationStatus;
+  verification_method: BusinessVerificationMethod | null;
+  lineage: BusinessBrief[];
+  branches: BusinessBrief[];
+  my_role: BusinessTeamRole | "owner" | null;
   category: Category;
   city: City;
   owner: UserPublic | null;
@@ -105,6 +130,42 @@ export interface BusinessList {
   page: number;
   page_size: number;
   pages: number;
+}
+
+export interface BusinessTeamMember {
+  id: number;
+  business_id: number;
+  user_id: number;
+  role: BusinessTeamRole;
+  user: UserBrief | null;
+  created_at: string;
+}
+
+export interface BusinessInvitation {
+  id: number;
+  business_id: number;
+  business: BusinessBrief | null;
+  email: string;
+  role: BusinessTeamRole;
+  status: BusinessInvitationStatus;
+  message: string | null;
+  expires_at: string;
+  created_at: string;
+  token: string | null;
+}
+
+export interface BusinessVerification {
+  id: number;
+  business_id: number;
+  business: BusinessBrief | null;
+  method: BusinessVerificationMethod;
+  status: BusinessVerificationStatus;
+  reference: string | null;
+  document_url: string | null;
+  notes: string | null;
+  admin_notes: string | null;
+  created_at: string;
+  reviewed_at: string | null;
 }
 
 export interface Claim {
@@ -452,4 +513,8 @@ export interface BusinessPayload {
   logo_url: string | null;
   category_id: number;
   city_id: number;
+  parent_id?: number | null;
+  hours?: string | null;
+  promo_headline?: string | null;
+  promo_details?: string | null;
 }

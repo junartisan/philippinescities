@@ -79,6 +79,47 @@ def ensure_schema(engine: Engine) -> None:
                     "ALTER TABLE businesses ADD COLUMN "
                     f"featured_until {timestamp_type}"
                 )
+            if "parent_id" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE businesses ADD COLUMN parent_id INTEGER"
+                )
+            if "hours" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE businesses ADD COLUMN hours VARCHAR(500)"
+                )
+            if "promo_headline" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE businesses ADD COLUMN promo_headline VARCHAR(200)"
+                )
+            if "promo_details" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE businesses ADD COLUMN promo_details TEXT"
+                )
+            if "verification_status" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE businesses ADD COLUMN verification_status VARCHAR(20) "
+                    "NOT NULL DEFAULT 'unverified'"
+                )
+            if "verification_method" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE businesses ADD COLUMN verification_method VARCHAR(20)"
+                )
+            if "verification_reference" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE businesses ADD COLUMN verification_reference VARCHAR(500)"
+                )
+            if "verification_notes" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE businesses ADD COLUMN verification_notes VARCHAR(1000)"
+                )
+            if "verified_by_id" not in existing:
+                connection.exec_driver_sql(
+                    "ALTER TABLE businesses ADD COLUMN verified_by_id INTEGER"
+                )
+            if "verified_at" not in existing:
+                connection.exec_driver_sql(
+                    f"ALTER TABLE businesses ADD COLUMN verified_at {timestamp_type}"
+                )
             connection.exec_driver_sql(
                 "CREATE UNIQUE INDEX IF NOT EXISTS ix_businesses_stripe_subscription_id "
                 "ON businesses (stripe_subscription_id)"
@@ -87,6 +128,24 @@ def ensure_schema(engine: Engine) -> None:
                 "CREATE INDEX IF NOT EXISTS ix_businesses_featured_until "
                 "ON businesses (featured_until)"
             )
+            connection.exec_driver_sql(
+                "CREATE INDEX IF NOT EXISTS ix_businesses_parent_id "
+                "ON businesses (parent_id)"
+            )
+            connection.exec_driver_sql(
+                "CREATE INDEX IF NOT EXISTS ix_businesses_verification_status "
+                "ON businesses (verification_status)"
+            )
+            if engine.dialect.name == "postgresql":
+                foreign_keys = {
+                    foreign_key["name"]
+                    for foreign_key in inspector.get_foreign_keys("businesses")
+                }
+                if "fk_businesses_parent_id" not in foreign_keys:
+                    connection.exec_driver_sql(
+                        "ALTER TABLE businesses ADD CONSTRAINT fk_businesses_parent_id "
+                        "FOREIGN KEY (parent_id) REFERENCES businesses(id) ON DELETE SET NULL"
+                    )
 
     if "city_posts" in inspector.get_table_names():
         existing = {column["name"] for column in inspector.get_columns("city_posts")}
@@ -201,3 +260,81 @@ def ensure_schema(engine: Engine) -> None:
                 connection.exec_driver_sql(
                     "ALTER TABLE blog_contributor_profiles ADD COLUMN credentials VARCHAR(1000)"
                 )
+
+    inspector = inspect(engine)
+    table_names = inspector.get_table_names()
+    id_type = "SERIAL PRIMARY KEY" if engine.dialect.name == "postgresql" else "INTEGER PRIMARY KEY AUTOINCREMENT"
+    with engine.begin() as connection:
+        if "business_team_members" not in table_names:
+            connection.exec_driver_sql(
+                f"CREATE TABLE business_team_members ("
+                f"id {id_type}, "
+                "business_id INTEGER NOT NULL REFERENCES businesses(id) ON DELETE CASCADE, "
+                "user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, "
+                "role VARCHAR(20) NOT NULL, "
+                "created_by_id INTEGER REFERENCES users(id) ON DELETE SET NULL, "
+                f"created_at {timestamp_type} NOT NULL, "
+                f"updated_at {timestamp_type} NOT NULL, "
+                "CONSTRAINT uq_business_team_business_user UNIQUE (business_id, user_id))"
+            )
+        if "business_invitations" not in table_names:
+            connection.exec_driver_sql(
+                f"CREATE TABLE business_invitations ("
+                f"id {id_type}, "
+                "business_id INTEGER NOT NULL REFERENCES businesses(id) ON DELETE CASCADE, "
+                "email VARCHAR(255) NOT NULL, "
+                "role VARCHAR(20) NOT NULL, "
+                "token_hash VARCHAR(64) NOT NULL UNIQUE, "
+                "status VARCHAR(20) NOT NULL DEFAULT 'pending', "
+                "message VARCHAR(1000), "
+                f"expires_at {timestamp_type} NOT NULL, "
+                "invited_by_id INTEGER REFERENCES users(id) ON DELETE SET NULL, "
+                "accepted_by_id INTEGER REFERENCES users(id) ON DELETE SET NULL, "
+                f"created_at {timestamp_type} NOT NULL, "
+                f"updated_at {timestamp_type} NOT NULL)"
+            )
+        if "business_verifications" not in table_names:
+            connection.exec_driver_sql(
+                f"CREATE TABLE business_verifications ("
+                f"id {id_type}, "
+                "business_id INTEGER NOT NULL REFERENCES businesses(id) ON DELETE CASCADE, "
+                "method VARCHAR(20) NOT NULL, "
+                "status VARCHAR(20) NOT NULL DEFAULT 'pending', "
+                "reference VARCHAR(500), "
+                "document_url VARCHAR(500), "
+                "notes VARCHAR(1000), "
+                "admin_notes VARCHAR(1000), "
+                "submitted_by_id INTEGER REFERENCES users(id) ON DELETE SET NULL, "
+                "reviewed_by_id INTEGER REFERENCES users(id) ON DELETE SET NULL, "
+                f"reviewed_at {timestamp_type}, "
+                f"created_at {timestamp_type} NOT NULL, "
+                f"updated_at {timestamp_type} NOT NULL)"
+            )
+        connection.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS ix_business_team_members_business_id "
+            "ON business_team_members (business_id)"
+        )
+        connection.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS ix_business_team_members_user_id "
+            "ON business_team_members (user_id)"
+        )
+        connection.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS ix_business_invitations_business_id "
+            "ON business_invitations (business_id)"
+        )
+        connection.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS ix_business_invitations_email "
+            "ON business_invitations (email)"
+        )
+        connection.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS ix_business_invitations_status "
+            "ON business_invitations (status)"
+        )
+        connection.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS ix_business_verifications_business_id "
+            "ON business_verifications (business_id)"
+        )
+        connection.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS ix_business_verifications_status "
+            "ON business_verifications (status)"
+        )

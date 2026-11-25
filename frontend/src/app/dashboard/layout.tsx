@@ -13,6 +13,7 @@ const tabs = [
   { href: "/dashboard/listings", label: "My listings" },
   { href: "/dashboard/billing", label: "Billing & payments" },
   { href: "/dashboard/claims", label: "My claims" },
+  { href: "/dashboard/invitations", label: "Invitations" },
   { href: "/dashboard/blog-profile", label: "Writer profile" },
 ];
 
@@ -29,7 +30,7 @@ export default function DashboardLayout({
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">
-              Owner workspace
+              Business workspace
             </p>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
               Dashboard

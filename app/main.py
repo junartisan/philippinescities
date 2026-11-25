@@ -21,6 +21,7 @@ from app.routers import (
     claims,
     contributors,
     featured,
+    invitations,
     reviews,
     uploads,
 )
@@ -52,6 +53,7 @@ app = FastAPI(
         {"name": "Cities", "description": "Cities where listings are located"},
         {"name": "Businesses", "description": "Listings, ownership, and directory browsing"},
         {"name": "Claims", "description": "Claim ownership of existing listings"},
+        {"name": "Business invitations", "description": "Brand and branch team invitations"},
         {"name": "Reviews", "description": "Reviews from registered users"},
         {"name": "Articles", "description": "Business updates, products, promos, and events"},
         {"name": "City blog", "description": "Admin-published city articles and events"},
@@ -82,6 +84,7 @@ for router in (
     cities,
     businesses,
     claims,
+    invitations,
     reviews,
     articles,
     blog_categories,

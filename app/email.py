@@ -100,3 +100,39 @@ def send_password_reset_email(to_email: str, full_name: str, token: str) -> bool
     </div>
     """
     return send_email(to_email, subject, text_body, html_body)
+
+
+def send_business_invitation_email(
+    to_email: str,
+    business_name: str,
+    inviter_name: str,
+    role_label: str,
+    token: str,
+    expires_hours: int,
+) -> bool:
+    invite_url = f"{settings.frontend_url.rstrip('/')}/dashboard/invitations?token={token}"
+    subject = f"You are invited to manage {business_name} on Philippines Cities"
+    greeting = inviter_name.strip() or "A directory administrator"
+    text_body = (
+        f"Hi,\n\n"
+        f"{greeting} invited you to join {business_name} on Philippines Cities as {role_label}.\n"
+        f"Open the link below to review and accept the invitation:\n{invite_url}\n\n"
+        f"This invitation expires in {expires_hours} hours.\n"
+        "If you were not expecting this invitation, you can ignore this email.\n"
+    )
+    html_body = f"""
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a">
+      <h2 style="margin-bottom:8px">You are invited</h2>
+      <p>Hi,</p>
+      <p>{greeting} invited you to join <strong>{business_name}</strong> on Philippines Cities as <strong>{role_label}</strong>.</p>
+      <p>
+        <a href="{invite_url}" style="display:inline-block;padding:10px 16px;background:#059669;color:#fff;text-decoration:none;border-radius:999px">
+          Review invitation
+        </a>
+      </p>
+      <p>If the button does not work, copy this link into your browser:</p>
+      <p><a href="{invite_url}">{invite_url}</a></p>
+      <p>This invitation expires in {expires_hours} hours.</p>
+    </div>
+    """
+    return send_email(to_email, subject, text_body, html_body)

@@ -38,10 +38,17 @@ def serialize_business(
     business: Business,
     average_rating: float | None = None,
     review_count: int | None = None,
+    *,
+    lineage: list | None = None,
+    branches: list | None = None,
+    my_role: str | None = None,
 ) -> BusinessOut:
     result = BusinessOut.model_validate(business)
     result.average_rating = round(float(average_rating or 0), 2)
     result.review_count = int(review_count or 0)
+    result.lineage = lineage or []
+    result.branches = branches or []
+    result.my_role = my_role
     return result
 
 

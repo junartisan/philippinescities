@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { Newspaper, Pencil, Plus, Sparkles, Store, Trash2 } from "lucide-react";
+import { Newspaper, Pencil, Plus, ShieldCheck, Sparkles, Store, Trash2, Users } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import {
   Alert,
@@ -125,6 +125,18 @@ export default function MyListingsPage() {
                       ) : business.article_access_override === "rejected" ? (
                         <Badge tone="rose">Subscription off</Badge>
                       ) : null}
+                      {business.my_role ? (
+                        <Badge tone="violet">{business.my_role.replaceAll("_", " ")}</Badge>
+                      ) : null}
+                      {business.parent_id ? <Badge tone="sky">Branch</Badge> : null}
+                      {business.verification_status === "verified" ? (
+                        <Badge tone="emerald">
+                          <ShieldCheck className="h-3 w-3" />
+                          Verified
+                        </Badge>
+                      ) : business.verification_status === "pending" ? (
+                        <Badge tone="amber">Verification pending</Badge>
+                      ) : null}
                     </div>
                     <p className="mt-0.5 text-xs text-slate-500">
                       {business.category.name} · {business.city.name}
@@ -173,6 +185,16 @@ export default function MyListingsPage() {
                       className={buttonClass("secondary", "sm")}
                     >
                       View
+                    </Link>
+                  ) : null}
+                  {(business.my_role === "owner" ||
+                    business.my_role === "corporate_admin") ? (
+                    <Link
+                      href={`/dashboard/listings/${business.id}/team`}
+                      className={buttonClass("secondary", "sm")}
+                    >
+                      <Users className="h-3.5 w-3.5" />
+                      Team
                     </Link>
                   ) : null}
                   <Link

@@ -15,6 +15,9 @@ from app.models import (
     BlogContributorStatus,
     Business,
     BusinessStatus,
+    BusinessVerification,
+    BusinessVerificationMethod,
+    BusinessVerificationStatus,
     Category,
     City,
     CityPost,
@@ -38,6 +41,7 @@ from app.schemas import (
     AdminReviewOut,
     AdminStats,
     ArticleList,
+    BusinessBrief,
     BusinessCreate,
     BusinessList,
     BusinessOut,
@@ -45,6 +49,8 @@ from app.schemas import (
     BlogContributorDecision,
     BlogContributorOut,
     BusinessReject,
+    BusinessVerificationDecision,
+    BusinessVerificationOut,
     CityPostCreate,
     CityPostList,
     CityPostOut,
@@ -67,6 +73,7 @@ from app.utils import (
     plain_text_length,
     sanitize_post_body,
     unique_slug,
+    validate_business_parent,
     validate_city_post_parent,
 )
 
@@ -119,6 +126,32 @@ def _business_out(db: Session, business_id: int) -> BusinessOut:
             detail="Business not found",
         )
     return serialize_business(row[0], row[1], row[2])
+
+
+def _verification_out(db: Session, record: BusinessVerification) -> BusinessVerificationOut:
+    result = BusinessVerificationOut.model_validate(record)
+    business = db.get(Business, record.business_id)
+    if business is not None:
+        result.business = BusinessBrief(
+            id=business.id,
+            name=business.name,
+            slug=business.slug,
+        )
+    return result
+
+
+def _apply_business_verification(
+    db: Session,
+    business: Business,
+    status: BusinessVerificationStatus,
+    reviewer: User,
+    notes: str | None = None,
+) -> None:
+    business.verification_status = status
+    business.verification_notes = notes or business.verification_notes
+    business.verified_by_id = reviewer.id if status == BusinessVerificationStatus.verified else None
+    business.verified_at = utcnow() if status == BusinessVerificationStatus.verified else None
+    db.add(business)
 
 
 def _city_post_query():
@@ -286,6 +319,9 @@ def create_unclaimed_business(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid category_id")
     if db.get(City, payload.city_id) is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid city_id")
+    parent_error = validate_business_parent(db, None, payload.parent_id)
+    if parent_error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=parent_error)
 
     business = Business(
         name=payload.name.strip(),
@@ -298,6 +334,10 @@ def create_unclaimed_business(
         logo_url=payload.logo_url,
         category_id=payload.category_id,
         city_id=payload.city_id,
+        parent_id=payload.parent_id,
+        hours=payload.hours,
+        promo_headline=payload.promo_headline,
+        promo_details=payload.promo_details,
         owner_id=None,
         created_by_id=admin.id,
         status=BusinessStatus.approved,
@@ -1270,3 +1310,92 @@ def update_user_role(
     db.commit()
     db.refresh(user)
     return user
+
+
+@router.get("/verifications", response_model=list[BusinessVerificationOut])
+def list_business_verifications(
+    status_filter: BusinessVerificationStatus | None = Query(default=BusinessVerificationStatus.pending, alias="status"),
+    _: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    stmt = (
+        select(BusinessVerification)
+        .options(joinedload(BusinessVerification.business))
+        .order_by(BusinessVerification.created_at.desc())
+    )
+    if status_filter is not None:
+        stmt = stmt.where(BusinessVerification.status == status_filter)
+    records = db.scalars(stmt).unique().all()
+    return [_verification_out(db, record) for record in records]
+
+
+@router.post("/verifications/{verification_id}/approve", response_model=BusinessVerificationOut)
+def approve_business_verification(
+    verification_id: int,
+    payload: BusinessVerificationDecision,
+    admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    record = db.get(BusinessVerification, verification_id)
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Verification request not found")
+    if record.status != BusinessVerificationStatus.pending:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verification request has already been processed",
+        )
+    business = db.get(Business, record.business_id)
+    if business is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Business not found")
+
+    reviewed_at = utcnow()
+    record.status = BusinessVerificationStatus.verified
+    record.admin_notes = payload.admin_notes
+    record.reviewed_by_id = admin.id
+    record.reviewed_at = reviewed_at
+    _apply_business_verification(
+        db,
+        business,
+        BusinessVerificationStatus.verified,
+        admin,
+        payload.admin_notes or record.notes,
+    )
+    db.add(record)
+    db.commit()
+    return _verification_out(db, record)
+
+
+@router.post("/verifications/{verification_id}/reject", response_model=BusinessVerificationOut)
+def reject_business_verification(
+    verification_id: int,
+    payload: BusinessVerificationDecision,
+    admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    record = db.get(BusinessVerification, verification_id)
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Verification request not found")
+    if record.status != BusinessVerificationStatus.pending:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verification request has already been processed",
+        )
+    business = db.get(Business, record.business_id)
+    if business is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Business not found")
+
+    reviewed_at = utcnow()
+    record.status = BusinessVerificationStatus.rejected
+    record.admin_notes = payload.admin_notes
+    record.reviewed_by_id = admin.id
+    record.reviewed_at = reviewed_at
+    _apply_business_verification(
+        db,
+        business,
+        BusinessVerificationStatus.rejected,
+        admin,
+        payload.admin_notes or record.notes,
+    )
+    db.add(record)
+    db.commit()
+    return _verification_out(db, record)

@@ -6,7 +6,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import CityPost
+from app.models import Business, BusinessStatus, CityPost
 
 
 def slugify(value: str) -> str:
@@ -141,6 +141,38 @@ def validate_city_post_parent(
         if ancestor is None:
             break
         current = ancestor
+    return None
+
+
+def validate_business_parent(
+    db: Session,
+    business_id: int | None,
+    parent_id: int | None,
+) -> str | None:
+    if parent_id is None:
+        return None
+    parent = db.get(Business, parent_id)
+    if parent is None or parent.status != BusinessStatus.approved:
+        return "Invalid parent_id"
+    if business_id is not None and parent_id == business_id:
+        return "A listing cannot be its own parent"
+    if parent.parent_id is not None:
+        return "A branch cannot be used as a parent brand"
+    if business_id is not None:
+        child = db.scalar(select(Business.id).where(Business.parent_id == business_id))
+        if child is not None:
+            return "A brand with branches cannot become a branch"
+        seen = {business_id}
+        current: Business | None = parent
+        for _ in range(10):
+            if current.id in seen:
+                return "Parent selection would create a cycle"
+            seen.add(current.id)
+            if current.parent_id is None:
+                break
+            current = db.get(Business, current.parent_id)
+            if current is None:
+                break
     return None
 
 

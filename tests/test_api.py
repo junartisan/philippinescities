@@ -2042,3 +2042,222 @@ def test_forgot_and_reset_password(client, monkeypatch):
     assert old_login.status_code == 401
     new_login = client.post("/api/auth/login", data={"username": "reset-me@example.com", "password": "newpassword123"})
     assert new_login.status_code == 200, new_login.text
+
+
+def test_business_brand_branch_invitations_and_permissions(client, monkeypatch):
+    from app.routers import businesses as business_router
+
+    sent = {}
+
+    def fake_send(to_email, business_name, inviter_name, role_label, token, expires_hours):
+        sent["email"] = to_email
+        sent["business"] = business_name
+        sent["role"] = role_label
+        sent["token"] = token
+        return True
+
+    monkeypatch.setattr(business_router, "send_business_invitation_email", fake_send)
+
+    category_id = client.get("/api/categories").json()[0]["id"]
+    city_id = client.get("/api/cities").json()[0]["id"]
+    admin_headers = login(client, "admin@example.com", "adminpassword")
+
+    brand_owner = register(client, "brand-owner@example.com", "Brand Owner")
+    manager = register(client, "branch-manager@example.com", "Branch Manager")
+    staff = register(client, "branch-staff@example.com", "Branch Staff")
+
+    brand_owner_headers = login(client, "brand-owner@example.com", "password123")
+    manager_headers = login(client, "branch-manager@example.com", "password123")
+    staff_headers = login(client, "branch-staff@example.com", "password123")
+
+    brand = client.post(
+        "/api/businesses",
+        headers=brand_owner_headers,
+        json={
+            "name": "Island Coffee Brand",
+            "description": "A Philippine coffee brand with many branches.",
+            "website": "https://www.islandcoffee.example.com",
+            "category_id": category_id,
+            "city_id": city_id,
+        },
+    )
+    assert brand.status_code == 201, brand.text
+    brand_id = brand.json()["id"]
+
+    approved_brand = client.post(
+        f"/api/admin/businesses/{brand_id}/approve", headers=admin_headers
+    )
+    assert approved_brand.status_code == 200, approved_brand.text
+
+    branch = client.post(
+        "/api/businesses",
+        headers=brand_owner_headers,
+        json={
+            "name": "Island Coffee Makati",
+            "address": "123 Ayala Avenue",
+            "parent_id": brand_id,
+            "category_id": category_id,
+            "city_id": city_id,
+        },
+    )
+    assert branch.status_code == 201, branch.text
+    branch_data = branch.json()
+    branch_id = branch_data["id"]
+    assert branch_data["parent_id"] == brand_id
+    assert branch_data["owner"]["id"] == brand_owner["id"]
+
+    approved_branch = client.post(
+        f"/api/admin/businesses/{branch_id}/approve", headers=admin_headers
+    )
+    assert approved_branch.status_code == 200, approved_branch.text
+
+    branch_detail = client.get(
+        f"/api/businesses/{branch_id}", headers=brand_owner_headers
+    ).json()
+    assert [item["id"] for item in branch_detail["lineage"]] == [brand_id, branch_id]
+    assert branch_detail["my_role"] == "owner"
+
+    brand_detail = client.get(f"/api/businesses/{brand_id}").json()
+    assert [item["id"] for item in brand_detail["branches"]] == [branch_id]
+
+    bad_parent = client.post(
+        "/api/businesses",
+        headers=brand_owner_headers,
+        json={
+            "name": "Island Coffee Third Level",
+            "parent_id": branch_id,
+            "category_id": category_id,
+            "city_id": city_id,
+        },
+    )
+    assert bad_parent.status_code == 400
+    assert bad_parent.json()["detail"] == "A branch cannot be used as a parent brand"
+
+    self_parent = client.patch(
+        f"/api/businesses/{brand_id}",
+        headers=brand_owner_headers,
+        json={"parent_id": brand_id},
+    )
+    assert self_parent.status_code == 400
+    assert self_parent.json()["detail"] == "A listing cannot be its own parent"
+
+    manager_invite = client.post(
+        f"/api/businesses/{branch_id}/invitations",
+        headers=brand_owner_headers,
+        json={
+            "email": manager["email"],
+            "role": "branch_manager",
+            "message": "Please manage the Makati branch.",
+        },
+    )
+    assert manager_invite.status_code == 201, manager_invite.text
+    assert manager_invite.json()["token"] is None
+    assert sent["email"] == manager["email"]
+    assert sent["role"] == "branch manager"
+
+    manager_invitations = client.get(
+        "/api/invitations/mine", headers=manager_headers
+    ).json()
+    assert any(item["business_id"] == branch_id for item in manager_invitations)
+
+    accepted = client.post(
+        "/api/invitations/accept",
+        headers=manager_headers,
+        json={"token": sent["token"]},
+    )
+    assert accepted.status_code == 200, accepted.text
+    assert accepted.json()["status"] == "accepted"
+
+    team = client.get(
+        f"/api/businesses/{branch_id}/team", headers=brand_owner_headers
+    ).json()
+    manager_member = next(item for item in team if item["user_id"] == manager["id"])
+    assert manager_member["role"] == "branch_manager"
+
+    wrong_user_accept = client.post(
+        "/api/invitations/accept",
+        headers=staff_headers,
+        json={"token": sent["token"]},
+    )
+    assert wrong_user_accept.status_code == 400
+
+    branch_update = client.patch(
+        f"/api/businesses/{branch_id}",
+        headers=manager_headers,
+        json={
+            "hours": "Mon-Sat 7am-7pm",
+            "promo_headline": "Weekend latte promo",
+            "promo_details": "Buy one latte, get one free on Saturdays.",
+        },
+    )
+    assert branch_update.status_code == 200, branch_update.text
+    assert branch_update.json()["hours"] == "Mon-Sat 7am-7pm"
+
+    forbidden_name = client.patch(
+        f"/api/businesses/{branch_id}",
+        headers=manager_headers,
+        json={"name": "Renamed Without Permission"},
+    )
+    assert forbidden_name.status_code == 403
+
+    verified_branch = client.get(
+        f"/api/businesses/{branch_id}", headers=manager_headers
+    ).json()
+    assert verified_branch["verification_status"] == "verified"
+    assert verified_branch["my_role"] == "branch_manager"
+
+    staff_invite = client.post(
+        f"/api/businesses/{branch_id}/invitations",
+        headers=brand_owner_headers,
+        json={"email": staff["email"], "role": "staff"},
+    )
+    assert staff_invite.status_code == 201, staff_invite.text
+    staff_accept = client.post(
+        "/api/invitations/accept",
+        headers=staff_headers,
+        json={"token": sent["token"]},
+    )
+    assert staff_accept.status_code == 200, staff_accept.text
+
+    staff_promo = client.patch(
+        f"/api/businesses/{branch_id}",
+        headers=staff_headers,
+        json={"promo_headline": "Staff updated promo"},
+    )
+    assert staff_promo.status_code == 200, staff_promo.text
+    staff_address = client.patch(
+        f"/api/businesses/{branch_id}",
+        headers=staff_headers,
+        json={"address": "Staff cannot change this"},
+    )
+    assert staff_address.status_code == 403
+
+    verification = client.post(
+        f"/api/businesses/{brand_id}/verification",
+        headers=brand_owner_headers,
+        json={
+            "method": "registration",
+            "reference": "REG-123456",
+            "notes": "Business registration certificate submitted.",
+        },
+    )
+    assert verification.status_code == 200, verification.text
+    assert verification.json()["status"] == "pending"
+
+    pending_verifications = client.get(
+        "/api/admin/verifications", headers=admin_headers
+    ).json()
+    verification_id = next(
+        item["id"] for item in pending_verifications if item["business_id"] == brand_id
+    )
+
+    approved_verification = client.post(
+        f"/api/admin/verifications/{verification_id}/approve",
+        headers=admin_headers,
+        json={"admin_notes": "Registration verified."},
+    )
+    assert approved_verification.status_code == 200, approved_verification.text
+    assert approved_verification.json()["status"] == "verified"
+
+    verified_brand = client.get(f"/api/businesses/{brand_id}").json()
+    assert verified_brand["verification_status"] == "verified"

@@ -53,6 +53,33 @@ class ClaimStatus(str, enum.Enum):
     rejected = "rejected"
 
 
+class BusinessTeamRole(str, enum.Enum):
+    corporate_admin = "corporate_admin"
+    branch_manager = "branch_manager"
+    staff = "staff"
+
+
+class BusinessInvitationStatus(str, enum.Enum):
+    pending = "pending"
+    accepted = "accepted"
+    declined = "declined"
+    revoked = "revoked"
+    expired = "expired"
+
+
+class BusinessVerificationMethod(str, enum.Enum):
+    registration = "registration"
+    domain_email = "domain_email"
+    branch_staff = "branch_staff"
+
+
+class BusinessVerificationStatus(str, enum.Enum):
+    unverified = "unverified"
+    pending = "pending"
+    verified = "verified"
+    rejected = "rejected"
+
+
 class ArticleType(str, enum.Enum):
     product_update = "product_update"
     service_update = "service_update"
@@ -210,6 +237,16 @@ class User(TimestampMixin, Base):
         back_populates="user",
         foreign_keys="FeaturedRequest.user_id",
     )
+    business_team_members: Mapped[list[BusinessTeamMember]] = relationship(
+        "BusinessTeamMember",
+        back_populates="user",
+        foreign_keys="BusinessTeamMember.user_id",
+        cascade="all, delete-orphan",
+    )
+    business_invitations: Mapped[list[BusinessInvitation]] = relationship(
+        "BusinessInvitation",
+        foreign_keys="BusinessInvitation.invited_by_id",
+    )
 
 
 class Category(TimestampMixin, Base):
@@ -268,11 +305,33 @@ class Business(TimestampMixin, Base):
     created_by_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL")
     )
+    parent_id: Mapped[int | None] = mapped_column(
+        ForeignKey("businesses.id", ondelete="SET NULL"), index=True
+    )
 
     status: Mapped[BusinessStatus] = mapped_column(
         enum_column(BusinessStatus), default=BusinessStatus.pending, index=True, nullable=False
     )
     rejection_reason: Mapped[str | None] = mapped_column(String(500))
+
+    hours: Mapped[str | None] = mapped_column(String(500))
+    promo_headline: Mapped[str | None] = mapped_column(String(200))
+    promo_details: Mapped[str | None] = mapped_column(Text)
+    verification_status: Mapped[BusinessVerificationStatus] = mapped_column(
+        enum_column(BusinessVerificationStatus),
+        default=BusinessVerificationStatus.unverified,
+        index=True,
+        nullable=False,
+    )
+    verification_method: Mapped[BusinessVerificationMethod | None] = mapped_column(
+        enum_column(BusinessVerificationMethod)
+    )
+    verification_reference: Mapped[str | None] = mapped_column(String(500))
+    verification_notes: Mapped[str | None] = mapped_column(String(1000))
+    verified_by_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     stripe_subscription_id: Mapped[str | None] = mapped_column(
         String(255), unique=True, index=True
@@ -314,6 +373,22 @@ class Business(TimestampMixin, Base):
     featured_requests: Mapped[list[FeaturedRequest]] = relationship(
         back_populates="business", cascade="all, delete-orphan"
     )
+    parent: Mapped[Business | None] = relationship(
+        back_populates="children", remote_side=[id]
+    )
+    children: Mapped[list[Business]] = relationship(
+        back_populates="parent", order_by="Business.name"
+    )
+    team_members: Mapped[list[BusinessTeamMember]] = relationship(
+        back_populates="business", cascade="all, delete-orphan"
+    )
+    invitations: Mapped[list[BusinessInvitation]] = relationship(
+        back_populates="business", cascade="all, delete-orphan"
+    )
+    verifications: Mapped[list[BusinessVerification]] = relationship(
+        back_populates="business", cascade="all, delete-orphan"
+    )
+    verified_by: Mapped[User | None] = relationship(foreign_keys=[verified_by_id])
 
     @property
     def is_claimed(self) -> bool:
@@ -364,6 +439,95 @@ class Claim(TimestampMixin, Base):
 
     business: Mapped[Business] = relationship(back_populates="claims")
     user: Mapped[User] = relationship(back_populates="claims", foreign_keys=[user_id])
+
+
+class BusinessTeamMember(TimestampMixin, Base):
+    __tablename__ = "business_team_members"
+    __table_args__ = (
+        UniqueConstraint("business_id", "user_id", name="uq_business_team_business_user"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    business_id: Mapped[int] = mapped_column(
+        ForeignKey("businesses.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    role: Mapped[BusinessTeamRole] = mapped_column(
+        enum_column(BusinessTeamRole), index=True, nullable=False
+    )
+    created_by_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+
+    business: Mapped[Business] = relationship(back_populates="team_members")
+    user: Mapped[User] = relationship(
+        back_populates="business_team_members", foreign_keys=[user_id]
+    )
+
+
+class BusinessInvitation(TimestampMixin, Base):
+    __tablename__ = "business_invitations"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    business_id: Mapped[int] = mapped_column(
+        ForeignKey("businesses.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    email: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
+    role: Mapped[BusinessTeamRole] = mapped_column(
+        enum_column(BusinessTeamRole), nullable=False
+    )
+    token_hash: Mapped[str] = mapped_column(
+        String(64), unique=True, index=True, nullable=False
+    )
+    status: Mapped[BusinessInvitationStatus] = mapped_column(
+        enum_column(BusinessInvitationStatus),
+        default=BusinessInvitationStatus.pending,
+        index=True,
+        nullable=False,
+    )
+    message: Mapped[str | None] = mapped_column(String(1000))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    invited_by_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    accepted_by_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+
+    business: Mapped[Business] = relationship(back_populates="invitations")
+
+
+class BusinessVerification(TimestampMixin, Base):
+    __tablename__ = "business_verifications"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    business_id: Mapped[int] = mapped_column(
+        ForeignKey("businesses.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    method: Mapped[BusinessVerificationMethod] = mapped_column(
+        enum_column(BusinessVerificationMethod), index=True, nullable=False
+    )
+    status: Mapped[BusinessVerificationStatus] = mapped_column(
+        enum_column(BusinessVerificationStatus),
+        default=BusinessVerificationStatus.pending,
+        index=True,
+        nullable=False,
+    )
+    reference: Mapped[str | None] = mapped_column(String(500))
+    document_url: Mapped[str | None] = mapped_column(String(500))
+    notes: Mapped[str | None] = mapped_column(String(1000))
+    admin_notes: Mapped[str | None] = mapped_column(String(1000))
+    submitted_by_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    reviewed_by_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    business: Mapped[Business] = relationship(back_populates="verifications")
 
 
 class Review(TimestampMixin, Base):

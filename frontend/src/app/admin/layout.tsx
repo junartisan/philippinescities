@@ -56,6 +56,7 @@ const allItems: AdminItem[] = [
     roles: MODERATOR_ROLES,
   },
   { href: "/admin/claims", label: "Claims", roles: ADMIN_ROLES },
+  { href: "/admin/verifications", label: "Verifications", roles: ADMIN_ROLES },
   { href: "/admin/payments", label: "Payments", roles: ADMIN_ROLES },
   { href: "/admin/featured", label: "Featured", roles: ADMIN_ROLES },
   { href: "/admin/users", label: "Users", roles: ADMIN_ROLES },

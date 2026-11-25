@@ -6,7 +6,11 @@ from app.models import (
     ArticleAccessOverride,
     ArticleType,
     BlogContributorStatus,
+    BusinessInvitationStatus,
     BusinessStatus,
+    BusinessTeamRole,
+    BusinessVerificationMethod,
+    BusinessVerificationStatus,
     CityPostReviewStatus,
     CityPostType,
     ClaimStatus,
@@ -141,6 +145,10 @@ class BusinessCreate(BaseModel):
     logo_url: str | None = Field(default=None, max_length=500)
     category_id: int
     city_id: int
+    parent_id: int | None = None
+    hours: str | None = Field(default=None, max_length=500)
+    promo_headline: str | None = Field(default=None, max_length=200)
+    promo_details: str | None = Field(default=None, max_length=5000)
 
 
 class BusinessUpdate(BaseModel):
@@ -153,6 +161,16 @@ class BusinessUpdate(BaseModel):
     logo_url: str | None = Field(default=None, max_length=500)
     category_id: int | None = None
     city_id: int | None = None
+    parent_id: int | None = None
+    hours: str | None = Field(default=None, max_length=500)
+    promo_headline: str | None = Field(default=None, max_length=200)
+    promo_details: str | None = Field(default=None, max_length=5000)
+
+
+class BusinessBrief(ORMModel):
+    id: int
+    name: str
+    slug: str
 
 
 class BusinessOut(ORMModel):
@@ -173,6 +191,15 @@ class BusinessOut(ORMModel):
     is_featured: bool
     featured_until: datetime | None
     rejection_reason: str | None
+    parent_id: int | None = None
+    hours: str | None = None
+    promo_headline: str | None = None
+    promo_details: str | None = None
+    verification_status: BusinessVerificationStatus = BusinessVerificationStatus.unverified
+    verification_method: BusinessVerificationMethod | None = None
+    lineage: list[BusinessBrief] = Field(default_factory=list)
+    branches: list[BusinessBrief] = Field(default_factory=list)
+    my_role: str | None = None
     category: CategoryOut
     city: CityOut
     owner: UserPublic | None
@@ -180,12 +207,6 @@ class BusinessOut(ORMModel):
     review_count: int = 0
     created_at: datetime
     updated_at: datetime
-
-
-class BusinessBrief(ORMModel):
-    id: int
-    name: str
-    slug: str
 
 
 class ArticleBusinessOut(BusinessBrief):
@@ -205,6 +226,63 @@ class BusinessList(BaseModel):
     page: int
     page_size: int
     pages: int
+
+
+class BusinessTeamMemberOut(ORMModel):
+    id: int
+    business_id: int
+    user_id: int
+    role: BusinessTeamRole
+    user: UserBrief | None = None
+    created_at: datetime
+
+
+class BusinessInvitationCreate(BaseModel):
+    email: EmailStr
+    role: BusinessTeamRole
+    message: str | None = Field(default=None, max_length=1000)
+
+
+class BusinessInvitationOut(ORMModel):
+    id: int
+    business_id: int
+    business: BusinessBrief | None = None
+    email: str
+    role: BusinessTeamRole
+    status: BusinessInvitationStatus
+    message: str | None
+    expires_at: datetime
+    created_at: datetime
+    token: str | None = None
+
+
+class InvitationAction(BaseModel):
+    token: str = Field(min_length=10, max_length=200)
+
+
+class BusinessVerificationSubmit(BaseModel):
+    method: BusinessVerificationMethod
+    reference: str | None = Field(default=None, max_length=500)
+    document_url: str | None = Field(default=None, max_length=500)
+    notes: str | None = Field(default=None, max_length=1000)
+
+
+class BusinessVerificationOut(ORMModel):
+    id: int
+    business_id: int
+    business: BusinessBrief | None = None
+    method: BusinessVerificationMethod
+    status: BusinessVerificationStatus
+    reference: str | None
+    document_url: str | None
+    notes: str | None
+    admin_notes: str | None
+    created_at: datetime
+    reviewed_at: datetime | None
+
+
+class BusinessVerificationDecision(BaseModel):
+    admin_notes: str | None = Field(default=None, max_length=1000)
 
 
 class BusinessReject(BaseModel):
