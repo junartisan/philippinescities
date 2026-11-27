@@ -18,6 +18,15 @@ import type { Role, User } from "@/lib/types";
 
 const roles: Role[] = ["user", "owner", "editor", "supervisor", "admin"];
 
+const roleLabels: Record<Role, string> = {
+  user: "User",
+  owner: "Business owner",
+  contributor: "Contributor",
+  editor: "Editor",
+  supervisor: "Supervisor",
+  admin: "Administrator",
+};
+
 export default function AdminUsersPage() {
   const { user: currentUser, updateUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
@@ -69,7 +78,7 @@ export default function AdminUsersPage() {
       if (currentUser?.id === updated.id) {
         updateUser(updated);
       }
-      setNotice(`${updated.full_name} is now ${role}.`);
+      setNotice(`${updated.full_name} is now ${roleLabels[updated.role]}.`);
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -82,8 +91,8 @@ export default function AdminUsersPage() {
       <div>
         <h2 className="text-lg font-semibold text-slate-900">Users</h2>
         <p className="mt-1 text-sm text-slate-500">
-          Promote trusted users to owners, editors, supervisors, or admins. You
-          cannot change your own role.
+          Set each user as a User, Business owner, Editor, Supervisor, or
+          Administrator. You cannot change your own role.
         </p>
       </div>
 
@@ -141,7 +150,7 @@ export default function AdminUsersPage() {
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-slate-400">Role</span>
                   <select
-                    className={cn(selectClass, "w-32 py-2")}
+                    className={cn(selectClass, "w-44 py-2")}
                     value={user.role}
                     disabled={isSelf || busyId === user.id}
                     onChange={(event) =>
@@ -150,7 +159,7 @@ export default function AdminUsersPage() {
                   >
                     {roles.map((role) => (
                       <option key={role} value={role}>
-                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                        {roleLabels[role]}
                       </option>
                     ))}
                   </select>
