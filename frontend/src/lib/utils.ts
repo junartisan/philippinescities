@@ -1,5 +1,3 @@
-import type { Category } from "@/lib/types";
-
 export function cn(
   ...values: Array<string | false | null | undefined>
 ): string {
@@ -55,22 +53,6 @@ export function formatDateTime(value?: string | null): string {
 
 export function formatRating(value: number): string {
   return value > 0 ? value.toFixed(1) : "New";
-}
-
-export function rootCategory(
-  categories: Category[],
-  category: Category | null,
-): Category | null {
-  if (!category) return null;
-  let current = category;
-  const visited = new Set<number>();
-  while (current.parent_id !== null && !visited.has(current.id)) {
-    visited.add(current.id);
-    const parent = categories.find((item) => item.id === current.parent_id);
-    if (!parent) break;
-    current = parent;
-  }
-  return current;
 }
 
 export function pluralize(

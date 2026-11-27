@@ -3,8 +3,7 @@ import { Suspense, type ReactNode } from "react";
 import { DynamicMarker } from "@/components/dynamic-marker";
 import { StructuredData } from "@/components/structured-data";
 import { absoluteUrl, buildMetadata, excerpt, fetchSeoData } from "@/lib/seo";
-import type { Business, Category } from "@/lib/types";
-import { rootCategory } from "@/lib/utils";
+import type { Business } from "@/lib/types";
 
 type Params = Promise<{ slug: string }>;
 
@@ -62,9 +61,6 @@ async function BusinessStructuredData({ params }: MetadataProps) {
   const slug = await resolveSlug(params);
   const business = await loadBusiness(slug);
   if (!business) return null;
-  const categories =
-    (await fetchSeoData<Category[]>("/api/categories")) ?? [];
-  const category = rootCategory(categories, business.category) ?? business.category;
 
   const path = seoPath(slug);
   const schema = {
@@ -112,9 +108,9 @@ async function BusinessStructuredData({ params }: MetadataProps) {
       {
         "@type": "ListItem",
         position: 4,
-        name: category.name,
+        name: business.category.name,
         item: absoluteUrl(
-          `/businesses?city_id=${business.city.id}&category_id=${category.id}`,
+          `/businesses?city_id=${business.city.id}&category_id=${business.category.id}`,
         ),
       },
       { "@type": "ListItem", position: 5, name: business.name, item: absoluteUrl(path) },

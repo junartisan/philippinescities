@@ -23,7 +23,7 @@ import {
   SkeletonCard,
 } from "@/components/ui";
 import { SITE_NAME } from "@/lib/seo";
-import { cn, rootCategory } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import type { BusinessList, Category, City } from "@/lib/types";
 
 interface Filters {
@@ -138,12 +138,10 @@ export function DirectoryClient() {
   );
   const selectedCity =
     cities.find((city) => String(city.id) === filters.cityId) ?? null;
-  const selectedCategory = rootCategory(
-    categories,
+  const selectedCategory =
     categories.find(
       (category) => String(category.id) === filters.categoryId,
-    ) ?? null,
-  );
+    ) ?? null;
   const directoryTitle = selectedCity
     ? `Business Directory in ${selectedCity.name}`
     : "Business Directory";
