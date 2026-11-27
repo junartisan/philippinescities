@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useEffect, useState, type FormEvent } from "react";
+import {
+  Fragment,
+  useEffect,
+  useState,
+  type FormEvent,
+  type MouseEvent,
+} from "react";
 import { useSearchParams } from "next/navigation";
 import { ChevronRight, RotateCcw, Search, Store } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
@@ -104,6 +110,27 @@ export function DirectoryClient() {
   function resetFilters() {
     setSearchInput("");
     setFilters({ search: "", categoryId: "", cityId: "", page: 1 });
+  }
+
+  function categoryHref(categoryId: number) {
+    const params = new URLSearchParams();
+    if (filters.search) params.set("search", filters.search);
+    if (filters.cityId) params.set("city_id", filters.cityId);
+    params.set("category_id", String(categoryId));
+    return `/businesses?${params.toString()}`;
+  }
+
+  function handleCategoryClick(
+    event: MouseEvent<HTMLAnchorElement>,
+    categoryId: number,
+  ) {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    setFilters((previous) => ({
+      ...previous,
+      categoryId: String(categoryId),
+      page: 1,
+    }));
   }
 
   const hasFilters = Boolean(
@@ -278,8 +305,19 @@ export function DirectoryClient() {
               .map((category) => (
                 <Link
                   key={category.id}
-                  href={`/businesses?category_id=${category.id}`}
-                  className="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-emerald-200 hover:text-emerald-700"
+                  href={categoryHref(category.id)}
+                  onClick={(event) => handleCategoryClick(event, category.id)}
+                  aria-current={
+                    filters.categoryId === String(category.id)
+                      ? "true"
+                      : undefined
+                  }
+                  className={cn(
+                    "rounded-full border px-3 py-1.5 text-xs font-medium transition",
+                    filters.categoryId === String(category.id)
+                      ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                      : "border-stone-200 bg-white text-slate-600 hover:border-emerald-200 hover:text-emerald-700",
+                  )}
                 >
                   {category.name}
                 </Link>
