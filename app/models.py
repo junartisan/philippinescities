@@ -41,6 +41,16 @@ class UserRole(str, enum.Enum):
     admin = "admin"
 
 
+class UserRoleAssignment(Base):
+    __tablename__ = "user_roles"
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    role: Mapped[UserRole] = mapped_column(enum_column(UserRole), primary_key=True)
+    user: Mapped["User"] = relationship(back_populates="role_assignments")
+
+
 class BusinessStatus(str, enum.Enum):
     pending = "pending"
     approved = "approved"
@@ -181,8 +191,17 @@ class User(TimestampMixin, Base):
     role: Mapped[UserRole] = mapped_column(
         enum_column(UserRole), default=UserRole.user, nullable=False
     )
+    role_assignments: Mapped[list[UserRoleAssignment]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    @property
+    def roles(self) -> list[UserRole]:
+        return [assignment.role for assignment in self.role_assignments]
 
     owned_businesses: Mapped[list[Business]] = relationship(
         "Business",

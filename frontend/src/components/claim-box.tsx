@@ -5,6 +5,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { CheckCircle2, ShieldCheck } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/components/auth-provider";
+import { hasRole } from "@/lib/roles";
 import type { Business, Claim } from "@/lib/types";
 import {
   Alert,
@@ -78,7 +79,7 @@ export function ClaimBox({ business }: { business: Business }) {
   const isOwner =
     Boolean(user && business.owner?.id === user.id) ||
     Boolean(business.my_role) ||
-    user?.role === "admin";
+    hasRole(user, "admin");
   const canManageTeam =
     business.my_role === "owner" || business.my_role === "corporate_admin";
   const loginHref = `/login?next=${encodeURIComponent(

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { ExternalLink, MessageSquare, Search, Trash2 } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/components/auth-provider";
+import { hasAnyRole } from "@/lib/roles";
 import {
   Alert,
   Avatar,
@@ -19,8 +20,7 @@ import type { AdminReview } from "@/lib/types";
 
 export default function AdminReviewsPage() {
   const { user } = useAuth();
-  const canDelete =
-    user?.role === "admin" || user?.role === "supervisor";
+  const canDelete = hasAnyRole(user, ["admin", "supervisor"]);
   const [reviews, setReviews] = useState<AdminReview[]>([]);
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");

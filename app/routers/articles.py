@@ -17,6 +17,7 @@ from app.models import (
     UserRole,
     utcnow,
 )
+from app.roles import has_any_role, has_role
 from app.schemas import ArticleCreate, ArticleList, ArticleOut, ArticleUpdate
 from app.utils import unique_slug
 
@@ -83,7 +84,7 @@ def _paginate(
 
 
 def _is_content_editor(user: User) -> bool:
-    return user.role in (UserRole.admin, UserRole.editor)
+    return has_any_role(user, (UserRole.admin, UserRole.editor))
 
 
 def _owned_business(db: Session, business_id: int, user: User) -> Business:
@@ -330,7 +331,7 @@ def delete_article(
     article = db.get(Article, article_id)
     if article is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Article not found")
-    if article.business.owner_id != user.id and user.role != UserRole.admin:
+    if article.business.owner_id != user.id and not has_role(user, UserRole.admin):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only the listing owner can delete this article",

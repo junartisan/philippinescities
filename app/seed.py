@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.models import BlogCategory, Category, City, User, UserRole
+from app.roles import effective_roles, has_role, set_roles
 from app.security import hash_password
 from app.utils import unique_slug
 
@@ -359,6 +360,8 @@ def bootstrap_admin(db: Session) -> None:
             role=UserRole.admin,
         )
         db.add(user)
-    elif user.role != UserRole.admin:
-        user.role = UserRole.admin
+        db.flush()
+        set_roles(db, user, [UserRole.admin])
+    elif not has_role(user, UserRole.admin):
+        set_roles(db, user, effective_roles(user) | {UserRole.admin})
     db.commit()

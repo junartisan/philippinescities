@@ -8,6 +8,7 @@ from app.models import (
     User,
     UserRole,
 )
+from app.roles import has_role
 
 BRAND_FIELDS = {
     "name",
@@ -40,7 +41,7 @@ def _member_role(db: Session, business_id: int, user_id: int) -> BusinessTeamRol
 
 
 def business_access_role(db: Session, user: User, business: Business) -> str | None:
-    if user.role == UserRole.admin or business.owner_id == user.id:
+    if has_role(user, UserRole.admin) or business.owner_id == user.id:
         return "owner"
 
     if business.parent_id is not None:

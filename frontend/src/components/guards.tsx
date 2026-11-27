@@ -4,6 +4,7 @@ import { useEffect, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { PageLoader } from "@/components/ui";
+import { hasAnyRole } from "@/lib/roles";
 import type { Role } from "@/lib/types";
 
 export function RequireAuth({
@@ -16,7 +17,7 @@ export function RequireAuth({
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const allowed = Boolean(user && (!roles || roles.includes(user.role)));
+  const allowed = Boolean(user && (!roles || hasAnyRole(user, roles)));
 
   useEffect(() => {
     if (loading) return;
@@ -25,7 +26,7 @@ export function RequireAuth({
       router.replace(`/login?next=${next}`);
       return;
     }
-    if (roles && !roles.includes(user.role)) {
+    if (roles && !hasAnyRole(user, roles)) {
       router.replace("/dashboard");
     }
   }, [loading, user, roles, pathname, router]);

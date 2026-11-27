@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/components/auth-provider";
+import { hasRole } from "@/lib/roles";
 import {
   Alert,
   EmptyState,
@@ -52,8 +53,8 @@ function StatCard({
 
 export default function AdminOverviewPage() {
   const { user, loading: authLoading } = useAuth();
-  const isAdmin = user?.role === "admin";
-  const canEditContent = isAdmin || user?.role === "editor";
+  const isAdmin = hasRole(user, "admin");
+  const canEditContent = isAdmin || hasRole(user, "editor");
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [pendingBusinesses, setPendingBusinesses] = useState<Business[]>([]);
   const [pendingClaims, setPendingClaims] = useState<Claim[]>([]);

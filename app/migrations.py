@@ -287,6 +287,23 @@ def ensure_schema(engine: Engine) -> None:
     table_names = inspector.get_table_names()
     id_type = "SERIAL PRIMARY KEY" if engine.dialect.name == "postgresql" else "INTEGER PRIMARY KEY AUTOINCREMENT"
     with engine.begin() as connection:
+        if "user_roles" not in table_names:
+            connection.exec_driver_sql(
+                "CREATE TABLE IF NOT EXISTS user_roles ("
+                "user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, "
+                "role VARCHAR(20) NOT NULL, "
+                "PRIMARY KEY (user_id, role))"
+            )
+        connection.exec_driver_sql(
+            "INSERT INTO user_roles (user_id, role) "
+            "SELECT id, role FROM users "
+            "WHERE NOT EXISTS ("
+            "SELECT 1 FROM user_roles ur WHERE ur.user_id = users.id"
+            ")"
+        )
+        connection.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS ix_user_roles_role ON user_roles (role)"
+        )
         if "business_team_members" not in table_names:
             connection.exec_driver_sql(
                 f"CREATE TABLE IF NOT EXISTS business_team_members ("

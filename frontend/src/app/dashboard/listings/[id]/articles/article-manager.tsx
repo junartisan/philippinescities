@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/components/auth-provider";
+import { hasRole } from "@/lib/roles";
 import {
   Alert,
   Badge,
@@ -347,7 +348,7 @@ export function ArticleManager() {
                 View listing
               </Link>
             ) : null}
-            {user?.role === "admin" ? (
+            {hasRole(user, "admin") ? (
               <Link
                 href={`/admin/businesses/${business.id}`}
                 className={buttonClass("ghost", "sm")}

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/components/auth-provider";
+import { hasRole } from "@/lib/roles";
 import { CoverImageInput } from "@/components/cover-image-input";
 import {
   Alert,
@@ -90,7 +91,7 @@ function toIso(value: string): string | null {
 
 export default function AdminArticlesPage() {
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
+  const isAdmin = hasRole(user, "admin");
   const [data, setData] = useState<ArticleList | null>(null);
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [filters, setFilters] = useState<Filters>({

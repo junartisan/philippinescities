@@ -12,6 +12,7 @@ from app.models import (
     User,
     UserRole,
 )
+from app.roles import has_any_role
 from app.schemas import (
     CityPostBreadcrumbOut,
     CityPostCommentCreate,
@@ -216,9 +217,8 @@ def delete_city_post_comment(
     )
     if comment is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
-    if comment.user_id != user.id and user.role not in (
-        UserRole.admin,
-        UserRole.supervisor,
+    if comment.user_id != user.id and not has_any_role(
+        user, (UserRole.admin, UserRole.supervisor)
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

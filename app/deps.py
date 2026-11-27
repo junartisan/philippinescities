@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.models import User, UserRole
+from app.roles import has_any_role
 from app.security import decode_access_token
 
 _token_url = f"{settings.api_prefix}/auth/login"
@@ -47,7 +48,7 @@ def get_current_active_user(user: User = Depends(get_current_user)) -> User:
 
 
 def get_current_admin(user: User = Depends(get_current_active_user)) -> User:
-    if user.role != UserRole.admin:
+    if not has_any_role(user, (UserRole.admin,)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required"
         )
@@ -55,7 +56,7 @@ def get_current_admin(user: User = Depends(get_current_active_user)) -> User:
 
 
 def get_current_editor(user: User = Depends(get_current_active_user)) -> User:
-    if user.role not in (UserRole.admin, UserRole.editor):
+    if not has_any_role(user, (UserRole.admin, UserRole.editor)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Editor privileges required"
         )
@@ -63,7 +64,7 @@ def get_current_editor(user: User = Depends(get_current_active_user)) -> User:
 
 
 def get_current_moderator(user: User = Depends(get_current_active_user)) -> User:
-    if user.role not in (UserRole.admin, UserRole.editor, UserRole.supervisor):
+    if not has_any_role(user, (UserRole.admin, UserRole.editor, UserRole.supervisor)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Moderator privileges required"
         )

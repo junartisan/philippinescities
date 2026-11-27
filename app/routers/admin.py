@@ -37,9 +37,11 @@ from app.models import (
     Review,
     User,
     UserRole,
+    UserRoleAssignment,
     utcnow,
 )
 from app.queries import business_query, paginate_businesses, serialize_business
+from app.roles import effective_roles, has_role, set_roles
 from app.schemas import (
     AdminReviewOut,
     AdminStats,
@@ -774,8 +776,8 @@ def approve_business(
         business.owner_id = business.created_by_id
     if business.owner_id is not None:
         owner = db.get(User, business.owner_id)
-        if owner is not None and owner.role == UserRole.user:
-            owner.role = UserRole.owner
+        if owner is not None and not has_role(owner, UserRole.owner):
+            set_roles(db, owner, effective_roles(owner) | {UserRole.owner})
 
     db.add(business)
     db.commit()
@@ -1634,8 +1636,8 @@ def approve_claim(
 
     reviewed_at = utcnow()
     claim.business.owner_id = claim.user_id
-    if claim.user.role == UserRole.user:
-        claim.user.role = UserRole.owner
+    if not has_role(claim.user, UserRole.owner):
+        set_roles(db, claim.user, effective_roles(claim.user) | {UserRole.owner})
     claim.status = ClaimStatus.approved
     claim.admin_notes = payload.admin_notes
     claim.reviewed_by_id = admin.id
@@ -1696,7 +1698,9 @@ def list_users(
         term = f"%{search.strip()}%"
         stmt = stmt.where(or_(User.email.ilike(term), User.full_name.ilike(term)))
     if role is not None:
-        stmt = stmt.where(User.role == role)
+        stmt = stmt.where(
+            or_(User.role == role, User.role_assignments.any(UserRoleAssignment.role == role))
+        )
     return db.scalars(stmt).all()
 
 
@@ -1710,13 +1714,25 @@ def update_user_role(
     user = db.get(User, user_id)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    if user.id == admin.id and payload.role != UserRole.admin:
+    requested = (
+        payload.roles
+        if payload.roles is not None
+        else ([payload.role] if payload.role is not None else None)
+    )
+    if not requested:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="At least one role is required",
+        )
+    if user.id == admin.id and UserRole.admin not in requested:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Admins cannot remove their own admin role",
         )
-    user.role = payload.role
-    db.add(user)
+    try:
+        set_roles(db, user, requested)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     db.commit()
     db.refresh(user)
     return user

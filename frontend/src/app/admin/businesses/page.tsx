@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { API_URL, api, errorMessage, getToken } from "@/lib/api";
 import { useAuth } from "@/components/auth-provider";
+import { hasRole } from "@/lib/roles";
 import {
   Alert,
   Badge,
@@ -51,7 +52,7 @@ const tabs: Array<{ value: StatusFilter; label: string }> = [
 
 export default function AdminBusinessesPage() {
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
+  const isAdmin = hasRole(user, "admin");
   const [status, setStatus] = useState<StatusFilter>("pending");
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");

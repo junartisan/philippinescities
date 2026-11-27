@@ -33,6 +33,7 @@ from app.permissions import (
     can_manage_team,
 )
 from app.queries import business_query, paginate_businesses, serialize_business
+from app.roles import has_any_role, has_role
 from app.schemas import (
     BusinessBrief,
     BusinessCreate,
@@ -120,7 +121,7 @@ def _can_view(db: Session, business: Business, user: User | None) -> bool:
         return True
     if user is None:
         return False
-    if user.role in (UserRole.admin, UserRole.supervisor):
+    if has_any_role(user, (UserRole.admin, UserRole.supervisor)):
         return True
     return business_access_role(db, user, business) is not None
 
@@ -628,7 +629,7 @@ def delete_business(
     business = db.get(Business, business_id)
     if business is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Business not found")
-    if user.role != UserRole.admin and business.owner_id != user.id:
+    if not has_role(user, UserRole.admin) and business.owner_id != user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only delete listings you own",

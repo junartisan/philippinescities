@@ -16,6 +16,7 @@ import { api, errorMessage } from "@/lib/api";
 import { AdSlot } from "@/components/adsense";
 import { useAuth } from "@/components/auth-provider";
 import { CityPostComments } from "@/components/city-post-comments";
+import { hasAnyRole, hasRole } from "@/lib/roles";
 import { RecentPosts } from "@/components/recent-posts";
 import { ShareButtons } from "@/components/share-buttons";
 import { WriterCredentialCard } from "@/components/writer-credential-card";
@@ -107,14 +108,11 @@ export default function CityPostDetailPage() {
   }
 
   const canEdit =
-    user?.role === "admin" ||
-    user?.role === "editor" ||
-    user?.role === "supervisor" ||
-    (user?.role === "contributor" && post.author?.id === user.id);
-  const editHref =
-    user?.role === "contributor"
-      ? `/contributor?edit=${post.id}`
-      : `/admin/blog?edit=${post.id}`;
+    hasAnyRole(user, ["admin", "editor", "supervisor"]) ||
+    (hasRole(user, "contributor") && post.author?.id === user?.id);
+  const editHref = hasRole(user, "contributor")
+    ? `/contributor?edit=${post.id}`
+    : `/admin/blog?edit=${post.id}`;
   const breadcrumbs = post.breadcrumbs?.length
     ? post.breadcrumbs
     : [{ id: post.id, title: post.title, slug: post.slug }];

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/components/auth-provider";
+import { hasRole } from "@/lib/roles";
 import {
   Alert,
   Avatar,
@@ -66,6 +67,24 @@ export default function DashboardPage() {
   const [saving, setSaving] = useState(false);
   const [profileError, setProfileError] = useState("");
   const [profileNotice, setProfileNotice] = useState("");
+  const isAdmin = hasRole(user, "admin");
+  const isEditor = hasRole(user, "editor");
+  const isSupervisor = hasRole(user, "supervisor");
+  const canAccessAdmin = isAdmin || isEditor || isSupervisor;
+  const roleLabel = isAdmin
+    ? "Administrator"
+    : isEditor
+      ? "Editor"
+      : isSupervisor
+        ? "Supervisor"
+        : hasRole(user, "owner")
+          ? "Business owner"
+          : "Member";
+  const consoleLabel = isAdmin
+    ? "Admin console"
+    : isEditor
+      ? "Editor console"
+      : "Supervisor console";
 
   useEffect(() => {
     if (!user) return;
@@ -249,23 +268,9 @@ export default function DashboardPage() {
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               <Badge
-                tone={
-                  user.role === "admin"
-                    ? "violet"
-                    : user.role === "editor" || user.role === "supervisor"
-                      ? "sky"
-                      : "emerald"
-                }
+                tone={isAdmin ? "violet" : isEditor || isSupervisor ? "sky" : "emerald"}
               >
-                {user.role === "admin"
-                  ? "Administrator"
-                  : user.role === "editor"
-                    ? "Editor"
-                    : user.role === "supervisor"
-                      ? "Supervisor"
-                      : user.role === "owner"
-                        ? "Business owner"
-                        : "Member"}
+                {roleLabel}
               </Badge>
               <Badge>Joined {formatDate(user.created_at)}</Badge>
             </div>
@@ -334,20 +339,14 @@ export default function DashboardPage() {
                 </span>
                 <ArrowRight className="h-4 w-4 text-stone-300" />
               </Link>
-              {user.role === "admin" ||
-              user.role === "editor" ||
-              user.role === "supervisor" ? (
+              {canAccessAdmin ? (
                 <Link
                   href="/admin"
                   className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm text-slate-600 hover:bg-stone-50 hover:text-slate-900"
                 >
                   <span className="inline-flex items-center gap-2">
                     <ShieldCheck className="h-4 w-4 text-slate-400" />
-                    {user.role === "admin"
-                      ? "Admin console"
-                      : user.role === "editor"
-                        ? "Editor console"
-                        : "Supervisor console"}
+                    {consoleLabel}
                   </span>
                   <ArrowRight className="h-4 w-4 text-stone-300" />
                 </Link>

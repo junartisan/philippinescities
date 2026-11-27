@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { MessageSquare, Trash2 } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/components/auth-provider";
+import { hasAnyRole } from "@/lib/roles";
 import type { Business, Review } from "@/lib/types";
 import {
   Alert,
@@ -177,8 +178,7 @@ export function ReviewSection({ business }: { business: Business }) {
             const canDelete =
               Boolean(user) &&
               (review.user.id === user?.id ||
-                user?.role === "admin" ||
-                user?.role === "supervisor");
+                hasAnyRole(user, ["admin", "supervisor"]));
             return (
               <li
                 key={review.id}

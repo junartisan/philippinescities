@@ -11,12 +11,12 @@ import {
   EmptyState,
   inputClass,
   PageLoader,
-  selectClass,
 } from "@/components/ui";
+import { userRoles } from "@/lib/roles";
 import { cn, formatDate } from "@/lib/utils";
 import type { Role, User } from "@/lib/types";
 
-const roles: Role[] = ["user", "owner", "editor", "supervisor", "admin"];
+const roleOptions: Role[] = ["user", "owner", "editor", "supervisor", "admin"];
 
 const roleLabels: Record<Role, string> = {
   user: "User",
@@ -64,13 +64,17 @@ export default function AdminUsersPage() {
     setAppliedSearch(search.trim());
   }
 
-  async function changeRole(target: User, role: Role) {
+  async function changeRoles(target: User, nextRoles: Role[]) {
+    if (nextRoles.length === 0) {
+      setError("Each user must have at least one role.");
+      return;
+    }
     setBusyId(target.id);
     setNotice("");
     try {
       const updated = await api<User>(`/api/admin/users/${target.id}/role`, {
         method: "PATCH",
-        body: { role },
+        body: { roles: nextRoles },
       });
       setUsers((previous) =>
         previous.map((user) => (user.id === updated.id ? updated : user)),
@@ -78,7 +82,10 @@ export default function AdminUsersPage() {
       if (currentUser?.id === updated.id) {
         updateUser(updated);
       }
-      setNotice(`${updated.full_name} is now ${roleLabels[updated.role]}.`);
+      const labels = userRoles(updated)
+        .map((role) => roleLabels[role])
+        .join(", ");
+      setNotice(`${updated.full_name}: ${labels}.`);
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -86,13 +93,21 @@ export default function AdminUsersPage() {
     }
   }
 
+  function toggleRole(target: User, role: Role, checked: boolean) {
+    const selected = userRoles(target);
+    const nextRoles = checked
+      ? Array.from(new Set([...selected, role]))
+      : selected.filter((current) => current !== role);
+    void changeRoles(target, nextRoles);
+  }
+
   return (
     <div className="space-y-5">
       <div>
         <h2 className="text-lg font-semibold text-slate-900">Users</h2>
         <p className="mt-1 text-sm text-slate-500">
-          Set each user as a User, Business owner, Editor, Supervisor, or
-          Administrator. You cannot change your own role.
+          Tick every role that applies: User, Business owner, Editor, Supervisor,
+          or Administrator. You cannot change your own roles.
         </p>
       </div>
 
@@ -147,22 +162,38 @@ export default function AdminUsersPage() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-400">Role</span>
-                  <select
-                    className={cn(selectClass, "w-44 py-2")}
-                    value={user.role}
-                    disabled={isSelf || busyId === user.id}
-                    onChange={(event) =>
-                      changeRole(user, event.target.value as Role)
-                    }
-                  >
-                    {roles.map((role) => (
-                      <option key={role} value={role}>
-                        {roleLabels[role]}
-                      </option>
-                    ))}
-                  </select>
+                <div className="sm:text-right">
+                  <span className="text-xs text-slate-400">Roles</span>
+                  <div className="mt-2 flex flex-wrap gap-2 sm:justify-end">
+                    {roleOptions.map((role) => {
+                      const checked = userRoles(user).includes(role);
+                      return (
+                        <label
+                          key={role}
+                          className={cn(
+                            "inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition",
+                            checked
+                              ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                              : "border-stone-200 bg-white text-slate-600 hover:border-stone-300",
+                            isSelf || busyId === user.id
+                              ? "cursor-not-allowed opacity-60"
+                              : "",
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            disabled={isSelf || busyId === user.id}
+                            onChange={(event) =>
+                              toggleRole(user, role, event.target.checked)
+                            }
+                            className="h-3.5 w-3.5 accent-emerald-600"
+                          />
+                          {roleLabels[role]}
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
               </li>
             );

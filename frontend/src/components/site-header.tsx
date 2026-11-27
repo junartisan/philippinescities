@@ -15,6 +15,7 @@ import {
 import { useAuth } from "@/components/auth-provider";
 import { NavDropdown } from "@/components/nav-dropdown";
 import { Avatar, buttonClass } from "@/components/ui";
+import { hasAnyRole, hasRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 
 const navGroups = [
@@ -36,6 +37,17 @@ export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const canAccessAdmin = hasAnyRole(user, ["admin", "editor", "supervisor"]);
+  const consoleLabel = hasRole(user, "admin")
+    ? "Admin"
+    : hasRole(user, "editor")
+      ? "Editor"
+      : "Moderation";
+  const consoleTitle = hasRole(user, "admin")
+    ? "Admin console"
+    : hasRole(user, "editor")
+      ? "Editor console"
+      : "Supervisor console";
 
   function isActive(href: string) {
     return pathname === href || pathname.startsWith(`${href}/`);
@@ -98,26 +110,14 @@ export function SiteHeader() {
             <div className="h-9 w-28 animate-pulse rounded-full bg-stone-200" />
           ) : user ? (
             <>
-              {user.role === "admin" ||
-              user.role === "editor" ||
-              user.role === "supervisor" ? (
+              {canAccessAdmin ? (
                 <Link
                   href="/admin"
                   className={buttonClass("ghost", "sm")}
-                  title={
-                    user.role === "admin"
-                      ? "Admin console"
-                      : user.role === "editor"
-                        ? "Editor console"
-                        : "Supervisor console"
-                  }
+                  title={consoleTitle}
                 >
                   <ShieldCheck className="h-4 w-4" />
-                  {user.role === "admin"
-                    ? "Admin"
-                    : user.role === "editor"
-                      ? "Editor"
-                      : "Moderation"}
+                  {consoleLabel}
                 </Link>
               ) : null}
               <Link
@@ -222,20 +222,14 @@ export function SiteHeader() {
                   <Plus className="h-4 w-4" />
                   List a business
                 </Link>
-                {user.role === "admin" ||
-                user.role === "editor" ||
-                user.role === "supervisor" ? (
+                {canAccessAdmin ? (
                   <Link
                     href="/admin"
                     onClick={() => setOpen(false)}
                     className={buttonClass("secondary", "sm", "w-full")}
                   >
                     <LayoutDashboard className="h-4 w-4" />
-                    {user.role === "admin"
-                      ? "Admin console"
-                      : user.role === "editor"
-                        ? "Editor console"
-                        : "Supervisor console"}
+                    {consoleTitle}
                   </Link>
                 ) : null}
                 <button

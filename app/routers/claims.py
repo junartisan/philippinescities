@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.deps import get_current_active_user
 from app.models import Business, BusinessStatus, Claim, ClaimStatus, User, UserRole
+from app.roles import has_role
 from app.schemas import ClaimCreate, ClaimOut
 
 router = APIRouter(prefix="/claims", tags=["Claims"])
@@ -84,6 +85,6 @@ def get_claim(
     db: Session = Depends(get_db),
 ):
     claim = _load_claim(db, claim_id)
-    if claim.user_id != user.id and user.role != UserRole.admin:
+    if claim.user_id != user.id and not has_role(user, UserRole.admin):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
     return claim

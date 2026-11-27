@@ -13,6 +13,7 @@ import {
   Spinner,
   textareaClass,
 } from "@/components/ui";
+import { hasAnyRole } from "@/lib/roles";
 import { formatDate } from "@/lib/utils";
 import type { CityPostComment } from "@/lib/types";
 
@@ -157,8 +158,7 @@ export function CityPostComments({ slug }: { slug: string }) {
             const canDelete =
               Boolean(user) &&
               (comment.user.id === user?.id ||
-                user?.role === "admin" ||
-                user?.role === "supervisor");
+                hasAnyRole(user, ["admin", "supervisor"]));
             return (
               <li
                 key={comment.id}

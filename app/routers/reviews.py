@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.deps import get_current_active_user
 from app.models import Business, BusinessStatus, Review, User, UserRole
+from app.roles import has_any_role
 from app.schemas import ReviewCreate, ReviewOut, ReviewUpdate
 
 router = APIRouter(tags=["Reviews"])
@@ -90,9 +91,8 @@ def update_review(
     review = db.get(Review, review_id)
     if review is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Review not found")
-    if review.user_id != user.id and user.role not in (
-        UserRole.admin,
-        UserRole.editor,
+    if review.user_id != user.id and not has_any_role(
+        user, (UserRole.admin, UserRole.editor)
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -119,9 +119,8 @@ def delete_review(
     review = db.get(Review, review_id)
     if review is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Review not found")
-    if review.user_id != user.id and user.role not in (
-        UserRole.admin,
-        UserRole.supervisor,
+    if review.user_id != user.id and not has_any_role(
+        user, (UserRole.admin, UserRole.supervisor)
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

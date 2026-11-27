@@ -444,6 +444,22 @@ def test_directory_flow(client):
     )
     assert promoted.status_code == 200, promoted.text
     assert promoted.json()["role"] == "supervisor"
+
+    multi = client.patch(
+        f"/api/admin/users/{supervisor['id']}/role",
+        headers=admin_headers,
+        json={"roles": ["editor", "supervisor"]},
+    )
+    assert multi.status_code == 200, multi.text
+    assert set(multi.json()["roles"]) == {"editor", "supervisor"}
+    assert multi.json()["role"] == "supervisor"
+    multi_headers = login(client, "supervisor@example.com", "password123")
+    assert client.get("/api/admin/articles", headers=multi_headers).status_code == 200
+    assert client.get("/api/admin/users", headers=multi_headers).status_code == 403
+    editor_users = client.get("/api/admin/users?role=editor", headers=admin_headers)
+    assert editor_users.status_code == 200
+    assert any(item["id"] == supervisor["id"] for item in editor_users.json())
+
     supervisor_headers = login(client, "supervisor@example.com", "password123")
 
     supervisor_stats = client.get("/api/admin/stats", headers=supervisor_headers)

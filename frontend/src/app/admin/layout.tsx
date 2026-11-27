@@ -10,6 +10,7 @@ import {
   NavDropdown,
   type NavLink,
 } from "@/components/nav-dropdown";
+import { hasAnyRole, hasRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 import type { Role } from "@/lib/types";
 
@@ -65,10 +66,9 @@ const allItems: AdminItem[] = [
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
-  const isEditor = user?.role === "editor";
-  const canSee = (link: AdminLink) =>
-    Boolean(user && link.roles.includes(user.role));
+  const isAdmin = hasRole(user, "admin");
+  const isEditor = hasRole(user, "editor");
+  const canSee = (link: AdminLink) => hasAnyRole(user, link.roles);
   const items = allItems
     .map((item) =>
       "links" in item

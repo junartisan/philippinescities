@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/components/auth-provider";
+import { hasRole } from "@/lib/roles";
 import { AdSlot } from "@/components/adsense";
 import { BusinessArticles } from "@/components/business-articles";
 import { BusinessVerificationBox } from "@/components/business-verification-box";
@@ -106,7 +107,7 @@ export default function BusinessDetailPage() {
     Boolean(user) &&
     (Boolean(role) ||
       user?.id === business.owner?.id ||
-      user?.role === "admin");
+      hasRole(user, "admin"));
   const canManageTeam = role === "owner" || role === "corporate_admin";
 
   return (

@@ -20,6 +20,7 @@ from app.models import (
     User,
     UserRole,
 )
+from app.roles import has_role
 from app.schemas import (
     FeaturedCheckoutOut,
     FeaturedRequestCreate,
@@ -144,7 +145,7 @@ def featured_status(
     business = db.get(Business, business_id)
     if business is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Business not found")
-    if business.owner_id != user.id and user.role != UserRole.admin:
+    if business.owner_id != user.id and not has_role(user, UserRole.admin):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You cannot view this listing's featured status",
@@ -174,7 +175,7 @@ def list_featured_requests(
     business = db.get(Business, business_id)
     if business is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Business not found")
-    if business.owner_id != user.id and user.role != UserRole.admin:
+    if business.owner_id != user.id and not has_role(user, UserRole.admin):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You cannot view this listing's featured requests",

@@ -1,6 +1,13 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from app.models import (
     ArticleAccessOverride,
@@ -48,8 +55,15 @@ class UserOut(ORMModel):
     phone: str | None
     avatar_url: str | None
     role: UserRole
+    roles: list[UserRole]
     is_active: bool
     created_at: datetime
+
+    @model_validator(mode="after")
+    def include_primary_role(self) -> "UserOut":
+        if self.role not in self.roles:
+            self.roles = [self.role, *self.roles]
+        return self
 
 
 class UserPublic(ORMModel):
@@ -64,7 +78,8 @@ class UserBrief(ORMModel):
 
 
 class RoleUpdate(BaseModel):
-    role: UserRole
+    role: UserRole | None = None
+    roles: list[UserRole] | None = None
 
 
 class Token(BaseModel):

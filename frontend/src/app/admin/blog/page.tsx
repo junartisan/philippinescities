@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/components/auth-provider";
+import { hasRole } from "@/lib/roles";
 import {
   Alert,
   Badge,
@@ -60,7 +61,7 @@ interface Filters {
 export default function AdminBlogPage() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
-  const isAdmin = user?.role === "admin";
+  const isAdmin = hasRole(user, "admin");
   const [posts, setPosts] = useState<CityPostList | null>(null);
   const [cities, setCities] = useState<City[]>([]);
   const [categories, setCategories] = useState<BlogCategory[]>([]);

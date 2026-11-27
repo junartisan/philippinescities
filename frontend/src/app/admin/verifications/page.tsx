@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Check, ExternalLink, ShieldCheck, X } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/components/auth-provider";
+import { hasRole } from "@/lib/roles";
 import {
   Alert,
   Badge,
@@ -46,9 +47,10 @@ export default function AdminVerificationsPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const isAdmin = hasRole(user, "admin");
 
   const load = useCallback(async () => {
-    if (user?.role !== "admin") return;
+    if (!isAdmin) return;
     setLoading(true);
     setError("");
     try {
@@ -63,13 +65,13 @@ export default function AdminVerificationsPage() {
     } finally {
       setLoading(false);
     }
-  }, [status, user?.role]);
+  }, [status, isAdmin]);
 
   useEffect(() => {
     let active = true;
     queueMicrotask(() => {
       if (!active || authLoading) return;
-      if (user?.role !== "admin") {
+      if (!isAdmin) {
         setLoading(false);
         setError("Only admins can review verification requests.");
         return;
@@ -79,7 +81,7 @@ export default function AdminVerificationsPage() {
     return () => {
       active = false;
     };
-  }, [authLoading, load, user?.role]);
+  }, [authLoading, load, isAdmin]);
 
   async function decide(
     verificationId: number,

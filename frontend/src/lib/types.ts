@@ -41,6 +41,7 @@ export interface User {
   phone: string | null;
   avatar_url: string | null;
   role: Role;
+  roles?: Role[];
   is_active: boolean;
   created_at: string;
 }

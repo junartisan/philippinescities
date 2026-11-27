@@ -15,6 +15,7 @@ import {
 import { api, errorMessage } from "@/lib/api";
 import { AdSlot } from "@/components/adsense";
 import { useAuth } from "@/components/auth-provider";
+import { hasAnyRole } from "@/lib/roles";
 import { ShareButtons } from "@/components/share-buttons";
 import {
   Alert,
@@ -82,9 +83,7 @@ export default function ArticleDetailPage() {
   }
 
   const canEdit =
-    user?.role === "admin" ||
-    user?.role === "editor" ||
-    user?.role === "supervisor" ||
+    hasAnyRole(user, ["admin", "editor", "supervisor"]) ||
     article.author?.id === user?.id;
   const editHref = `/dashboard/listings/${article.business_id}/articles?edit=${article.id}`;
 
