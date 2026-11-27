@@ -38,8 +38,12 @@ import {
   PageLoader,
   Stars,
 } from "@/components/ui";
-import { formatDate } from "@/lib/utils";
-import type { Business, BusinessVerificationStatus } from "@/lib/types";
+import { formatDate, rootCategory } from "@/lib/utils";
+import type {
+  Business,
+  BusinessVerificationStatus,
+  Category,
+} from "@/lib/types";
 
 function roleLabel(role: Business["my_role"]) {
   if (role === "corporate_admin") return "Corporate admin";
@@ -58,6 +62,7 @@ export default function BusinessDetailPage() {
   const slug = params.slug;
   const { user } = useAuth();
   const [business, setBusiness] = useState<Business | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -83,6 +88,18 @@ export default function BusinessDetailPage() {
     };
   }, [slug]);
 
+  useEffect(() => {
+    let active = true;
+    api<Category[]>("/api/categories")
+      .then((data) => {
+        if (active) setCategories(data);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
   if (loading) return <PageLoader label="Loading business…" />;
 
   if (error || !business) {
@@ -102,6 +119,8 @@ export default function BusinessDetailPage() {
     );
   }
 
+  const breadcrumbCategory =
+    rootCategory(categories, business.category) ?? business.category;
   const role = business.my_role;
   const canManage =
     Boolean(user) &&
@@ -140,10 +159,10 @@ export default function BusinessDetailPage() {
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <li>
             <Link
-              href={`/businesses?city_id=${business.city.id}&category_id=${business.category.id}`}
+              href={`/businesses?city_id=${business.city.id}&category_id=${breadcrumbCategory.id}`}
               className="transition hover:text-emerald-700"
             >
-              {business.category.name}
+              {breadcrumbCategory.name}
             </Link>
           </li>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />

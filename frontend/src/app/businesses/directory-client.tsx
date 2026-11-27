@@ -23,7 +23,7 @@ import {
   SkeletonCard,
 } from "@/components/ui";
 import { SITE_NAME } from "@/lib/seo";
-import { cn } from "@/lib/utils";
+import { cn, rootCategory } from "@/lib/utils";
 import type { BusinessList, Category, City } from "@/lib/types";
 
 interface Filters {
@@ -138,14 +138,12 @@ export function DirectoryClient() {
   );
   const selectedCity =
     cities.find((city) => String(city.id) === filters.cityId) ?? null;
-  const selectedCategory =
+  const selectedCategory = rootCategory(
+    categories,
     categories.find(
       (category) => String(category.id) === filters.categoryId,
-    ) ?? null;
-  const selectedCategoryParent = selectedCategory?.parent_id
-    ? categories.find((category) => category.id === selectedCategory.parent_id) ??
-      null
-    : null;
+    ) ?? null,
+  );
   const directoryTitle = selectedCity
     ? `Business Directory in ${selectedCity.name}`
     : "Business Directory";
@@ -203,23 +201,6 @@ export function DirectoryClient() {
                     ) : (
                       selectedCity.name
                     )}
-                  </li>
-                </Fragment>
-              ) : null}
-              {selectedCategoryParent ? (
-                <Fragment key={`category-parent-${selectedCategoryParent.id}`}>
-                  <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-                  <li>
-                    <Link
-                      href={
-                        selectedCity
-                          ? `/businesses?city_id=${selectedCity.id}&category_id=${selectedCategoryParent.id}`
-                          : `/categories/${selectedCategoryParent.slug}`
-                      }
-                      className="transition hover:text-emerald-700"
-                    >
-                      {selectedCategoryParent.name}
-                    </Link>
                   </li>
                 </Fragment>
               ) : null}
