@@ -109,7 +109,9 @@ async function BusinessStructuredData({ params }: MetadataProps) {
         "@type": "ListItem",
         position: 4,
         name: business.category.name,
-        item: absoluteUrl(`/categories/${business.category.slug}`),
+        item: absoluteUrl(
+          `/businesses?city_id=${business.city.id}&category_id=${business.category.id}`,
+        ),
       },
       { "@type": "ListItem", position: 5, name: business.name, item: absoluteUrl(path) },
     ],

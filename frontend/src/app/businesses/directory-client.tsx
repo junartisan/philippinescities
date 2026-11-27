@@ -211,7 +211,11 @@ export function DirectoryClient() {
                   <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
                   <li>
                     <Link
-                      href={`/categories/${selectedCategoryParent.slug}`}
+                      href={
+                        selectedCity
+                          ? `/businesses?city_id=${selectedCity.id}&category_id=${selectedCategoryParent.id}`
+                          : `/categories/${selectedCategoryParent.slug}`
+                      }
                       className="transition hover:text-emerald-700"
                     >
                       {selectedCategoryParent.name}

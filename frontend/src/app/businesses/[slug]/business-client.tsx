@@ -140,7 +140,7 @@ export default function BusinessDetailPage() {
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <li>
             <Link
-              href={`/categories/${business.category.slug}`}
+              href={`/businesses?city_id=${business.city.id}&category_id=${business.category.id}`}
               className="transition hover:text-emerald-700"
             >
               {business.category.name}
