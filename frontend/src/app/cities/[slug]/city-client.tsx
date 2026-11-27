@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { ArrowLeft, MapPin, Newspaper, Store } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState, type FormEvent } from "react";
+import { ArrowLeft, MapPin, Newspaper, Search, Store } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { AdSlot } from "@/components/adsense";
 import { BusinessCard } from "@/components/business-card";
@@ -12,11 +12,15 @@ import {
   Alert,
   buttonClass,
   EmptyState,
+  inputClass,
   PageLoader,
+  selectClass,
 } from "@/components/ui";
+import { cn } from "@/lib/utils";
 import type {
   Business,
   BusinessList,
+  Category,
   City,
   CityPost,
   CityPostList,
@@ -24,7 +28,11 @@ import type {
 
 export default function CityDetailPage() {
   const params = useParams<{ slug: string }>();
+  const router = useRouter();
   const slug = params.slug;
+  const [searchInput, setSearchInput] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [categories, setCategories] = useState<Category[]>([]);
   const [city, setCity] = useState<City | null>(null);
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [posts, setPosts] = useState<CityPost[]>([]);
@@ -63,6 +71,18 @@ export default function CityDetailPage() {
     };
   }, [slug]);
 
+  useEffect(() => {
+    let active = true;
+    api<Category[]>("/api/categories")
+      .then((data) => {
+        if (active) setCategories(data);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
   if (loading) return <PageLoader label="Loading city…" />;
 
   if (error || !city) {
@@ -83,6 +103,17 @@ export default function CityDetailPage() {
   }
 
   const cityLabel = [city.name, city.province].filter(Boolean).join(", ");
+  const cityId = city.id;
+  const cityName = city.name;
+
+  function handleSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const params = new URLSearchParams({ city_id: String(cityId) });
+    const query = searchInput.trim();
+    if (query) params.set("search", query);
+    if (categoryId) params.set("category_id", categoryId);
+    router.push(`/businesses?${params.toString()}`);
+  }
 
   return (
     <div>
@@ -108,7 +139,61 @@ export default function CityDetailPage() {
               community stories from {city.name}.
             </p>
           </div>
-          <div className="mt-6 flex flex-wrap gap-3">
+          <form
+            onSubmit={handleSearch}
+            className="mt-6 flex max-w-2xl flex-col gap-2 sm:flex-row"
+          >
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+                className={cn(inputClass, "pl-9")}
+                placeholder={`Search businesses in ${cityName}`}
+                aria-label={`Search businesses in ${cityName}`}
+              />
+            </div>
+            <select
+              aria-label="Filter by category"
+              className={cn(selectClass, "sm:w-52")}
+              value={categoryId}
+              onChange={(event) => setCategoryId(event.target.value)}
+            >
+              <option value="">All categories</option>
+              {categories
+                .filter((category) => category.parent_id === null)
+                .map((parent) => (
+                  <optgroup key={parent.id} label={parent.name}>
+                    <option value={parent.id}>{parent.name} - all</option>
+                    {categories
+                      .filter((child) => child.parent_id === parent.id)
+                      .map((child) => (
+                        <option key={child.id} value={child.id}>
+                          {child.name}
+                        </option>
+                      ))}
+                  </optgroup>
+                ))}
+              {categories
+                .filter(
+                  (category) =>
+                    category.parent_id !== null &&
+                    !categories.some((item) => item.id === category.parent_id),
+                )
+                .map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+            </select>
+            <button
+              type="submit"
+              className={cn(buttonClass("primary", "sm"), "shrink-0")}
+            >
+              Search
+            </button>
+          </form>
+          <div className="mt-4 flex flex-wrap gap-3">
             <a href="#businesses" className={buttonClass("primary", "sm")}>
               <Store className="h-4 w-4" />
               Local businesses
