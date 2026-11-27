@@ -106,6 +106,15 @@ export default function CategoryDetailPage() {
               <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
               <li>
                 <Link
+                  href="/businesses"
+                  className="transition hover:text-emerald-700"
+                >
+                  Business Directory
+                </Link>
+              </li>
+              <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+              <li>
+                <Link
                   href="/categories"
                   className="transition hover:text-emerald-700"
                 >

@@ -138,6 +138,14 @@ export function DirectoryClient() {
   );
   const selectedCity =
     cities.find((city) => String(city.id) === filters.cityId) ?? null;
+  const selectedCategory =
+    categories.find(
+      (category) => String(category.id) === filters.categoryId,
+    ) ?? null;
+  const selectedCategoryParent = selectedCategory?.parent_id
+    ? categories.find((category) => category.id === selectedCategory.parent_id) ??
+      null
+    : null;
   const directoryTitle = selectedCity
     ? `Business Directory in ${selectedCity.name}`
     : "Business Directory";
@@ -162,8 +170,8 @@ export function DirectoryClient() {
                 </Link>
               </li>
               <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-              <li aria-current={selectedCity ? undefined : "page"}>
-                {selectedCity ? (
+              <li aria-current={selectedCity || selectedCategory ? undefined : "page"}>
+                {selectedCity || selectedCategory ? (
                   <Link
                     href="/businesses"
                     className="transition hover:text-emerald-700"
@@ -179,8 +187,43 @@ export function DirectoryClient() {
               {selectedCity ? (
                 <Fragment key={`city-${selectedCity.id}`}>
                   <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+                  <li
+                    aria-current={selectedCategory ? undefined : "page"}
+                    className={
+                      selectedCategory ? undefined : "font-medium text-slate-700"
+                    }
+                  >
+                    {selectedCategory ? (
+                      <Link
+                        href={`/cities/${selectedCity.slug}`}
+                        className="transition hover:text-emerald-700"
+                      >
+                        {selectedCity.name}
+                      </Link>
+                    ) : (
+                      selectedCity.name
+                    )}
+                  </li>
+                </Fragment>
+              ) : null}
+              {selectedCategoryParent ? (
+                <Fragment key={`category-parent-${selectedCategoryParent.id}`}>
+                  <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+                  <li>
+                    <Link
+                      href={`/categories/${selectedCategoryParent.slug}`}
+                      className="transition hover:text-emerald-700"
+                    >
+                      {selectedCategoryParent.name}
+                    </Link>
+                  </li>
+                </Fragment>
+              ) : null}
+              {selectedCategory ? (
+                <Fragment key={`category-${selectedCategory.id}`}>
+                  <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
                   <li aria-current="page" className="font-medium text-slate-700">
-                    {selectedCity.name}
+                    {selectedCategory.name}
                   </li>
                 </Fragment>
               ) : null}
